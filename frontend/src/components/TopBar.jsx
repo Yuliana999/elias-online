@@ -53,9 +53,13 @@ export default function TopBar({ user, requests, onOpenProfile, onOpenFriends, o
             {requests.length === 0 && <p className="bell-empty">Поки що тихо.</p>}
             {requests.map((r) => (
               <div className="bell-request-row" key={r.id}>
-                <span className={`player-avatar ${avatarHue(r.from.id)}`}>
-                  {r.from.name.charAt(0).toUpperCase()}
-                </span>
+                {r.from.avatar ? (
+                  <img className="player-avatar player-avatar-photo" src={r.from.avatar} alt="" />
+                ) : (
+                  <span className={`player-avatar ${avatarHue(r.from.id)}`}>
+                    {r.from.name.charAt(0).toUpperCase()}
+                  </span>
+                )}
                 <span className="bell-request-name">{r.from.name}</span>
                 <button className="btn btn-primary btn-tiny" onClick={() => onAccept(r.id)}>
                   Прийняти
@@ -85,11 +89,11 @@ export default function TopBar({ user, requests, onOpenProfile, onOpenFriends, o
 
       <button
         type="button"
-        className={`top-bar-avatar ${avatarHue(user.id)}`}
+        className={user.avatar ? "top-bar-avatar top-bar-avatar-photo" : `top-bar-avatar ${avatarHue(user.id)}`}
         onClick={onOpenProfile}
         aria-label="Профіль"
       >
-        {user.name.charAt(0).toUpperCase()}
+        {user.avatar ? <img src={user.avatar} alt="" /> : user.name.charAt(0).toUpperCase()}
       </button>
     </div>
   );
