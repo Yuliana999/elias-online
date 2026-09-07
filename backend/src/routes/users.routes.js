@@ -1,9 +1,19 @@
 import { Router } from "express";
-import { getProfile, recordSoloResult, updateProfile } from "../controllers/users.controller.js";
+import {
+  getProfile,
+  recordSoloResult,
+  removeAvatar,
+  updateAvatar,
+  updateProfile,
+} from "../controllers/users.controller.js";
 import { requireAuth } from "../middleware/auth.middleware.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { validate } from "../middleware/validate.js";
-import { recordSoloResultSchema, updateProfileSchema } from "../validators/users.validators.js";
+import {
+  recordSoloResultSchema,
+  updateAvatarSchema,
+  updateProfileSchema,
+} from "../validators/users.validators.js";
 
 const router = Router();
 
@@ -16,6 +26,15 @@ router.post(
   asyncHandler(recordSoloResult)
 );
 router.patch("/me", requireAuth, validate(updateProfileSchema), asyncHandler(updateProfile));
+// Аватарка: PATCH завантажує/змінює фото (data URI від utils/image.js на
+// фронтенді), DELETE прибирає — повертає кольоровий кружечок з літерою.
+router.patch(
+  "/me/avatar",
+  requireAuth,
+  validate(updateAvatarSchema),
+  asyncHandler(updateAvatar)
+);
+router.delete("/me/avatar", requireAuth, asyncHandler(removeAvatar));
 router.get("/:publicId", requireAuth, asyncHandler(getProfile));
 
 export default router;
