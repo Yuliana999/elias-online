@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { getProfile, recordSoloResult } from "../controllers/users.controller.js";
+import { getProfile, recordSoloResult, updateProfile } from "../controllers/users.controller.js";
 import { requireAuth } from "../middleware/auth.middleware.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { validate } from "../middleware/validate.js";
-import { recordSoloResultSchema } from "../validators/users.validators.js";
+import { recordSoloResultSchema, updateProfileSchema } from "../validators/users.validators.js";
 
 const router = Router();
 
@@ -15,6 +15,7 @@ router.post(
   validate(recordSoloResultSchema),
   asyncHandler(recordSoloResult)
 );
+router.patch("/me", requireAuth, validate(updateProfileSchema), asyncHandler(updateProfile));
 router.get("/:publicId", requireAuth, asyncHandler(getProfile));
 
 export default router;
