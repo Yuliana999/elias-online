@@ -102,6 +102,9 @@ export const api = {
 
   // Профіль гравця зі статистикою (ігор зіграно / % вгаданих слів).
   getProfile: (publicId) => apiRequest(`/api/users/${publicId}`),
+  // Зміна імені акаунту (екран Профіль) — бекенд у відповідь шле і новий
+  // accessToken (як при вході), бо старий містить старе ім'я в payload.
+  updateProfile: (name) => apiRequest("/api/users/me", { method: "PATCH", body: { name } }),
   // Одиночна гра рахується повністю на клієнті (без лобі/сокетів) — тож
   // після фінішу шлемо результат сюди, щоб він теж потрапив у статистику.
   recordSoloResult: (guessed, skipped) =>
@@ -134,4 +137,14 @@ export const api = {
   // Капітан прибирає гравця з лобі (зайшов помилково або відвалився).
   kickPlayer: (code, playerId) =>
     apiRequest(`/api/lobby/${code}/players/${playerId}`, { method: "DELETE" }),
+
+  // Друзі: список друзів + вхідні заявки (TopBar.jsx/Friends.jsx).
+  listFriends: () => apiRequest("/api/friends"),
+  sendFriendRequest: (publicId) =>
+    apiRequest("/api/friends/requests", { method: "POST", body: { publicId } }),
+  // Позначити всі вхідні заявки переглянутими — коли відкривається дзвіночок.
+  markFriendRequestsSeen: () => apiRequest("/api/friends/requests/seen", { method: "POST" }),
+  acceptFriendRequest: (id) => apiRequest(`/api/friends/requests/${id}/accept`, { method: "POST" }),
+  declineFriendRequest: (id) => apiRequest(`/api/friends/requests/${id}`, { method: "DELETE" }),
+  removeFriend: (friendshipId) => apiRequest(`/api/friends/${friendshipId}`, { method: "DELETE" }),
 };
