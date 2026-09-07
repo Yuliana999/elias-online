@@ -7,24 +7,36 @@ export const MAX_TEAM_SIZE = 2;
 // Максимум гравців у лобі режиму "pairs" (гра рівно 1 на 1: капітан + друг).
 export const MAX_PAIRS_LOBBY_SIZE = 2;
 
-// Скільки команд можна створити в режимі "team" (капітан обирає в
-// налаштуваннях лобі — Lobby.jsx#onSettings({ teamCount })). "custom"
-// і "pairs" завжди рівно про дві сторони, тому teamCount на них не
-// впливає — там завжди A/B.
+// Скільки команд можна мати одночасно — у режимі "team" капітан обирає
+// це число сам (Lobby.jsx#onSettings({ teamCount })), а в "custom" воно
+// росте автоматично разом із кількістю гравців (lobby.controller.js#joinLobby),
+// але в обох випадках лишається в межах MIN_TEAM_COUNT..MAX_TEAM_COUNT.
+// "pairs" — завжди рівно 1 на 1, teamCount на нього не впливає.
 export const MIN_TEAM_COUNT = 2;
 export const MAX_TEAM_COUNT = 4;
 // Ключі команд у порядку створення — teamA..teamD у Lobby.js.
 export const TEAM_KEYS = ["A", "B", "C", "D"];
 
-// Максимум гравців у лобі режиму "custom" РАЗОМ (там завжди рівно 2
-// команди, незалежно від того, розподілені вони чи ще "без команди").
-export const MAX_TEAM_LOBBY_SIZE = MAX_TEAM_SIZE * MIN_TEAM_COUNT;
+// Максимум гравців у лобі режиму "custom" РАЗОМ — на відміну від "team",
+// тут капітан нічого не обирає: нова команда (C, потім D) з'являється
+// сама, щойно набирається ще MAX_TEAM_SIZE гравців понад поточну
+// кількість команд (див. requiredTeamCount нижче й lobby.controller.js#joinLobby).
+// Ця константа — верхня межа на випадок усіх MAX_TEAM_COUNT команд.
+export const MAX_TEAM_LOBBY_SIZE = MAX_TEAM_SIZE * MAX_TEAM_COUNT;
 
 // Максимум гравців у лобі режиму "team" РАЗОМ — залежить від того,
 // скільки команд обрав капітан (lobby.teamCount), тому це верхня межа
 // на випадок MAX_TEAM_COUNT команд. Реальний ліміт для конкретного лобі
 // рахується як MAX_TEAM_SIZE * lobby.teamCount (див. lobby.controller.js).
 export const MAX_TEAM_MODE_LOBBY_SIZE = MAX_TEAM_SIZE * MAX_TEAM_COUNT;
+
+// Скільки команд потрібно режиму "custom", щоб вмістити playerCount
+// гравців по MAX_TEAM_SIZE у кожній — використовується для автоматичного
+// зростання лобі (2 команди на 1-4 гравців, 3 — на 5-6, 4 — на 7-8+).
+export function requiredTeamCount(playerCount) {
+  const needed = Math.ceil((playerCount || 0) / MAX_TEAM_SIZE);
+  return Math.min(MAX_TEAM_COUNT, Math.max(MIN_TEAM_COUNT, needed));
+}
 
 // Тип рахунку партії — незалежний від mode (pairs/team/custom), тож
 // доступний у кожному з них однаково:
