@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema(
     // Розмір обмежений і на клієнті (utils/image.js), і на бекенді
     // (validators/users.validators.js#updateAvatarSchema).
     avatar: { type: String, default: null },
-    // Проста накопичувальна статистика гравця — оновлюється сервером після
+    // Проста  накопичувальна статистика гравця — оновлюється сервером після
     // кожної завершеної онлайн-партії (sockets/index.js#recordGameStats) і
     // після одиночної гри (users.controller.js#recordSoloResult). wordsGuessed/
     // wordsMissed рахуються по командному внеску гравця (спільна дія
