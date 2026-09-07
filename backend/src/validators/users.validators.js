@@ -1,4 +1,10 @@
 import { z } from "zod";
+import { nameSchema } from "./auth.validators.js";
+
+// Перейменування акаунту (Профіль) — ті самі правила, що й при реєстрації.
+export const updateProfileSchema = z.object({
+  name: nameSchema,
+});
 
 // Верхня межа — щоб один зіпсований/підроблений запит не роздув
 // статистику довільно (реальна одиночна гра рідко коли вгадає/скіпне
