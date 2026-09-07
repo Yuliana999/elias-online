@@ -4,7 +4,13 @@ import { genUniqueLobbyCode } from "../utils/id.js";
 import { createGame } from "../game/engine.js";
 import { setGame } from "../game/store.js";
 import { emitGameState, emitLobbyUpdate, emitLobbyStarted, emitLobbyKicked } from "../sockets/index.js";
-import { MAX_TEAM_SIZE, MAX_PAIRS_LOBBY_SIZE, MAX_TEAM_LOBBY_SIZE } from "../config/constants.js";
+import {
+  MAX_TEAM_SIZE,
+  MAX_PAIRS_LOBBY_SIZE,
+  MAX_TEAM_LOBBY_SIZE,
+  MIN_TEAM_COUNT,
+  TEAM_KEYS,
+} from "../config/constants.js";
 
 // Надсилає свіжий стан лобі всім, хто в кімнаті `lobby:<code>` —
 // персоналізовано для кожного сокета (див. emitLobbyUpdate).
@@ -13,9 +19,37 @@ function broadcastLobby(req, lobby) {
   emitLobbyUpdate(io, lobby);
 }
 
+// Скільки команд реально активно в цьому лобі. "pairs"/"custom" завжди
+// рівно про дві сторони (A/B), лише "team" дозволяє капітану обрати
+// 2-4 (lobby.teamCount, задається в updateSettings нижче).
+function activeTeamCount(lobby) {
+  return lobby.mode === "team" ? lobby.teamCount || MIN_TEAM_COUNT : MIN_TEAM_COUNT;
+}
+
+// Ключі активних команд ("A","B" або й "C","D") для цього лобі.
+function activeTeamKeys(lobby) {
+  return TEAM_KEYS.slice(0, activeTeamCount(lobby));
+}
+
+function teamField(key) {
+  return `team${key}`;
+}
+
+function getTeamArray(lobby, key) {
+  return lobby[teamField(key)] || [];
+}
+
+// Максимум гравців у лобі РАЗОМ (розподілених по командах + "без
+// команди"). У "team" залежить від того, скільки команд обрав капітан.
+function maxLobbySizeFor(lobby) {
+  if (lobby.mode === "pairs") return MAX_PAIRS_LOBBY_SIZE;
+  if (lobby.mode === "team") return MAX_TEAM_SIZE * activeTeamCount(lobby);
+  return MAX_TEAM_LOBBY_SIZE; // "custom" — завжди 2 команди
+}
+
 export async function createLobby(req, res) {
   // mode/roundDuration/totalRounds/genre/wordsPerTeam/scoring вже перевірені мідлваром validate(createLobbySchema)
-  const { mode, roundDuration, totalRounds, genre, wordsPerTeam, scoring } = req.body;
+  const { mode, roundDuration, totalRounds, genre, wordsPerTeam, scoring, teamCount } = req.body;
 
   const captain = await User.findOne({ publicId: req.userId });
   if (!captain) return res.status(404).json({ error: "Користувача не знайдено" });
@@ -31,6 +65,8 @@ export async function createLobby(req, res) {
     ...(genre ? { genre } : {}),
     ...(mode === "custom" && wordsPerTeam ? { wordsPerTeam } : {}),
     ...(scoring ? { scoring } : {}),
+    // teamCount діє лише в "team" — капітан може обрати 2-4 команди.
+    ...(mode === "team" && teamCount ? { teamCount } : {}),
   });
 
   res.status(201).json({ lobby: lobby.toPublicJSON(req.userId) });
@@ -61,13 +97,16 @@ export async function joinLobby(req, res) {
     }
     // "team"/"custom" — ліміт на команду (MAX_TEAM_SIZE) не обмежує тих,
     // хто ще "без команди", тож перевіряємо ще й загальний розмір лобі.
-    if (
-      (lobby.mode === "team" || lobby.mode === "custom") &&
-      lobby.players.length >= MAX_TEAM_LOBBY_SIZE
-    ) {
-      return res.status(409).json({
-        error: `Лобі вже заповнене (максимум ${MAX_TEAM_LOBBY_SIZE} гравців)`,
-      });
+    // У "team" він залежить від того, скільки команд обрав капітан
+    // (lobby.teamCount) — інакше зайві гравці ніколи не потраплять у
+    // жодну команду, бо всі команди вже заповнені.
+    if (lobby.mode === "team" || lobby.mode === "custom") {
+      const max = maxLobbySizeFor(lobby);
+      if (lobby.players.length >= max) {
+        return res.status(409).json({
+          error: `Лобі вже заповнене (максимум ${max} гравців)`,
+        });
+      }
     }
     lobby.players.push({ id: user.publicId, name: user.name });
     await lobby.save();
@@ -89,11 +128,16 @@ export async function assignTeam(req, res) {
   if (!lobby.players.some((p) => p.id === playerId)) {
     return res.status(400).json({ error: "Цього гравця немає в лобі" });
   }
+  // Команда має існувати для цього лобі — "team" з teamCount=2 не має
+  // команди C/D, "pairs"/"custom" мають лише A/B.
+  if (!activeTeamKeys(lobby).includes(team)) {
+    return res.status(400).json({ error: "Такої команди немає в цьому лобі" });
+  }
 
   // Ліміт на команду: максимум MAX_TEAM_SIZE гравців. Гравця, який уже
   // в цій команді, дозволяємо "переприсвоїти" (нічого не зміниться), але
   // нового понад ліміт — ні.
-  const targetTeam = team === "A" ? lobby.teamA : lobby.teamB;
+  const targetTeam = getTeamArray(lobby, team);
   const alreadyInTargetTeam = targetTeam.includes(playerId);
   if (!alreadyInTargetTeam && targetTeam.length >= MAX_TEAM_SIZE) {
     return res.status(409).json({
@@ -101,10 +145,10 @@ export async function assignTeam(req, res) {
     });
   }
 
-  lobby.teamA = lobby.teamA.filter((id) => id !== playerId);
-  lobby.teamB = lobby.teamB.filter((id) => id !== playerId);
-  if (team === "A") lobby.teamA.push(playerId);
-  if (team === "B") lobby.teamB.push(playerId);
+  for (const key of TEAM_KEYS) {
+    lobby[teamField(key)] = getTeamArray(lobby, key).filter((id) => id !== playerId);
+  }
+  lobby[teamField(team)].push(playerId);
 
   await lobby.save();
   broadcastLobby(req, lobby);
@@ -112,8 +156,8 @@ export async function assignTeam(req, res) {
 }
 
 export async function updateSettings(req, res) {
-  // roundDuration/totalRounds/genre/wordsPerTeam/scoring вже перевірені мідлваром validate(settingsSchema)
-  const { roundDuration, totalRounds, genre, wordsPerTeam, scoring } = req.body;
+  // roundDuration/totalRounds/genre/wordsPerTeam/scoring/teamCount вже перевірені мідлваром validate(settingsSchema)
+  const { roundDuration, totalRounds, genre, wordsPerTeam, scoring, teamCount } = req.body;
 
   const lobby = await Lobby.findOne({ code: req.params.code.toUpperCase() });
   if (!lobby) return res.status(404).json({ error: "Лобі не знайдено" });
@@ -129,6 +173,16 @@ export async function updateSettings(req, res) {
   if (genre) lobby.genre = genre;
   if (wordsPerTeam && lobby.mode === "custom") lobby.wordsPerTeam = wordsPerTeam;
   if (scoring) lobby.scoring = scoring;
+  if (teamCount && lobby.mode === "team" && teamCount !== lobby.teamCount) {
+    lobby.teamCount = teamCount;
+    // Якщо капітан зменшив кількість команд, гравці з командами, яких
+    // уже немає (напр. C/D при переході з 4 на 2), стають "без команди"
+    // — а не пропадають і не лишаються в неіснуючій команді.
+    const keptKeys = TEAM_KEYS.slice(0, teamCount);
+    for (const key of TEAM_KEYS) {
+      if (!keptKeys.includes(key)) lobby[teamField(key)] = [];
+    }
+  }
 
   await lobby.save();
   broadcastLobby(req, lobby);
@@ -148,7 +202,10 @@ export async function renameTeam(req, res) {
     return res.status(409).json({ error: "Гру вже почато, перейменувати команду більше не можна" });
   }
 
-  const teamIds = team === "A" ? lobby.teamA : lobby.teamB;
+  if (!activeTeamKeys(lobby).includes(team)) {
+    return res.status(400).json({ error: "Такої команди немає в цьому лобі" });
+  }
+  const teamIds = getTeamArray(lobby, team);
   if (!teamIds.includes(req.userId)) {
     return res.status(403).json({ error: "Перейменувати команду може лише той, хто в ній грає" });
   }
@@ -202,7 +259,10 @@ export async function startLobby(req, res) {
   const ready =
     lobby.mode === "pairs"
       ? lobby.players.length >= 1
-      : lobby.teamA.length >= 1 && lobby.teamB.length >= 1;
+      // Кожна активна команда (2-4 у "team", завжди 2 у "custom")
+      // повинна мати хоча б одного гравця — інакше хід ніколи до неї
+      // не дійде (turnTeamIdx крутиться по game.teams).
+      : activeTeamKeys(lobby).every((key) => getTeamArray(lobby, key).length >= 1);
   if (!ready) {
     return res.status(400).json({ error: "Ще не всі готові до старту" });
   }
@@ -283,8 +343,9 @@ export async function kickPlayer(req, res) {
   }
 
   lobby.players = lobby.players.filter((p) => p.id !== playerId);
-  lobby.teamA = lobby.teamA.filter((id) => id !== playerId);
-  lobby.teamB = lobby.teamB.filter((id) => id !== playerId);
+  for (const key of TEAM_KEYS) {
+    lobby[teamField(key)] = getTeamArray(lobby, key).filter((id) => id !== playerId);
+  }
   await lobby.save();
 
   const io = req.app.get("io");
