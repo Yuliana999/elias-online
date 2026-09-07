@@ -70,7 +70,7 @@ export default function EliasPrototype() {
       }
       try {
         const { user: me } = await api.me();
-        setUser({ id: me.id, name: me.name, stats: me.stats });
+        setUser({ id: me.id, name: me.name, avatar: me.avatar, stats: me.stats });
         loadFriends();
         goto("menu");
       } catch {
@@ -124,7 +124,7 @@ export default function EliasPrototype() {
       const { user: me, accessToken } =
         authMode === "register" ? await api.register(name, password) : await api.login(name, password);
       setAccessToken(accessToken);
-      setUser({ id: me.id, name: me.name, stats: me.stats });
+      setUser({ id: me.id, name: me.name, avatar: me.avatar, stats: me.stats });
       setIsGuest(false);
       loadFriends();
       goto("menu");
@@ -208,7 +208,22 @@ export default function EliasPrototype() {
   const saveProfile = async (name) => {
     const { user: updated, accessToken } = await api.updateProfile(name);
     setAccessToken(accessToken);
-    setUser({ id: updated.id, name: updated.name, stats: updated.stats });
+    setUser({ id: updated.id, name: updated.name, avatar: updated.avatar, stats: updated.stats });
+  };
+
+  // Завантажити/змінити аватарку — фото вже обрізане й стиснуте на
+  // клієнті (utils/image.js), тут лише шлемо на бекенд і оновлюємо стан.
+  // На відміну від saveProfile, новий accessToken не потрібен: аватарка
+  // не потрапляє в JWT-payload.
+  const saveAvatar = async (dataUrl) => {
+    const { user: updated } = await api.updateAvatar(dataUrl);
+    setUser((u) => ({ ...u, avatar: updated.avatar }));
+  };
+
+  // Прибрати аватарку — повертаємось до кольорового кружечка з літерою.
+  const removeAvatarPhoto = async () => {
+    const { user: updated } = await api.removeAvatar();
+    setUser((u) => ({ ...u, avatar: updated.avatar }));
   };
 
   // Підписка на realtime-події поточного лобі: доки лобі відкрите, всі
@@ -401,6 +416,8 @@ export default function EliasPrototype() {
           user={user}
           onBack={() => goto("menu")}
           onSave={saveProfile}
+          onSaveAvatar={saveAvatar}
+          onRemoveAvatar={removeAvatarPhoto}
           onOpenFriends={() => goto("friends")}
         />
       )}
