@@ -15,6 +15,14 @@ const userSchema = new mongoose.Schema(
     nameKey: { type: String, required: true, unique: true, index: true },
     passwordHash: { type: String, required: true },
     refreshTokenHash: { type: String, default: null },
+    // Аватарка зберігається прямо в документі як data URI
+    // ("data:image/jpeg;base64,...") — без окремого файлового сховища чи
+    // S3, бо для маленьких (стиснутих на клієнті до ~200x200) картинок
+    // це найпростіший варіант, який переживає рестарт/редеплой бекенда
+    // на Render (на відміну від файлів на диску — той там ефемерний).
+    // Розмір обмежений і на клієнті (utils/image.js), і на бекенді
+    // (validators/users.validators.js#updateAvatarSchema).
+    avatar: { type: String, default: null },
     // Проста накопичувальна статистика гравця — оновлюється сервером після
     // кожної завершеної онлайн-партії (sockets/index.js#recordGameStats) і
     // після одиночної гри (users.controller.js#recordSoloResult). wordsGuessed/
@@ -37,6 +45,7 @@ userSchema.methods.toPublicJSON = function () {
   return {
     id: this.publicId,
     name: this.name,
+    avatar: this.avatar || null,
     createdAt: this.createdAt,
     stats: {
       gamesPlayed,
