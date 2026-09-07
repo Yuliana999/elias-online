@@ -10,6 +10,7 @@ import {
   MAX_TEAM_LOBBY_SIZE,
   MIN_TEAM_COUNT,
   TEAM_KEYS,
+  requiredTeamCount,
 } from "../config/constants.js";
 
 // Надсилає свіжий стан лобі всім, хто в кімнаті `lobby:<code>` —
@@ -19,11 +20,12 @@ function broadcastLobby(req, lobby) {
   emitLobbyUpdate(io, lobby);
 }
 
-// Скільки команд реально активно в цьому лобі. "pairs"/"custom" завжди
-// рівно про дві сторони (A/B), лише "team" дозволяє капітану обрати
-// 2-4 (lobby.teamCount, задається в updateSettings нижче).
+// Скільки команд реально активно в цьому лобі. "pairs" завжди рівно про
+// дві сторони (A/B). "team" дозволяє капітану обрати 2-4 (updateSettings
+// нижче), а "custom" тепер росте автоматично разом із кількістю гравців
+// (joinLobby нижче) — в обох випадках це lobby.teamCount.
 function activeTeamCount(lobby) {
-  return lobby.mode === "team" ? lobby.teamCount || MIN_TEAM_COUNT : MIN_TEAM_COUNT;
+  return lobby.mode === "team" || lobby.mode === "custom" ? lobby.teamCount || MIN_TEAM_COUNT : MIN_TEAM_COUNT;
 }
 
 // Ключі активних команд ("A","B" або й "C","D") для цього лобі.
@@ -44,7 +46,10 @@ function getTeamArray(lobby, key) {
 function maxLobbySizeFor(lobby) {
   if (lobby.mode === "pairs") return MAX_PAIRS_LOBBY_SIZE;
   if (lobby.mode === "team") return MAX_TEAM_SIZE * activeTeamCount(lobby);
-  return MAX_TEAM_LOBBY_SIZE; // "custom" — завжди 2 команди
+  // "custom" — верхня межа на випадок усіх MAX_TEAM_COUNT команд; сама
+  // кількість команд (і разом із тим фактичний ліміт) росте поступово
+  // в joinLobby нижче, тож тут завжди перевіряємо саме на цей максимум.
+  return MAX_TEAM_LOBBY_SIZE;
 }
 
 export async function createLobby(req, res) {
@@ -109,6 +114,18 @@ export async function joinLobby(req, res) {
       }
     }
     lobby.players.push({ id: user.publicId, name: user.name });
+
+    // "custom" не має ручного вибору кількості команд (на відміну від
+    // "team") — вона підлаштовується сама під кількість гравців у лобі.
+    // Росте лише вгору: якщо гравець вийде, вже розподілених по командах
+    // людей ми не хочемо "губити", тому teamCount ніколи не зменшуємо тут.
+    if (lobby.mode === "custom") {
+      const needed = requiredTeamCount(lobby.players.length);
+      if (needed > (lobby.teamCount || MIN_TEAM_COUNT)) {
+        lobby.teamCount = needed;
+      }
+    }
+
     await lobby.save();
   }
 
@@ -234,7 +251,7 @@ export async function submitWords(req, res) {
     return res.status(409).json({ error: "Гра вже почалась" });
   }
 
-  const team = lobby.teamA.includes(req.userId) ? "A" : lobby.teamB.includes(req.userId) ? "B" : null;
+  const team = activeTeamKeys(lobby).find((key) => getTeamArray(lobby, key).includes(req.userId)) || null;
   if (!team) {
     return res.status(400).json({ error: "Спочатку приєднайся до команди" });
   }
@@ -259,18 +276,19 @@ export async function startLobby(req, res) {
   const ready =
     lobby.mode === "pairs"
       ? lobby.players.length >= 1
-      // Кожна активна команда (2-4 у "team", завжди 2 у "custom")
-      // повинна мати хоча б одного гравця — інакше хід ніколи до неї
-      // не дійде (turnTeamIdx крутиться по game.teams).
+      // Кожна активна команда (2-4, і в "team", і в "custom") повинна
+      // мати хоча б одного гравця — інакше хід ніколи до неї не дійде
+      // (turnTeamIdx крутиться по game.teams).
       : activeTeamKeys(lobby).every((key) => getTeamArray(lobby, key).length >= 1);
   if (!ready) {
     return res.status(400).json({ error: "Ще не всі готові до старту" });
   }
   if (lobby.mode === "custom") {
-    const aReady = lobby.submittedWords.A.length >= lobby.wordsPerTeam;
-    const bReady = lobby.submittedWords.B.length >= lobby.wordsPerTeam;
-    if (!aReady || !bReady) {
-      return res.status(400).json({ error: "Обидві команди мають подати слова для суперника" });
+    const allReady = activeTeamKeys(lobby).every(
+      (key) => (lobby.submittedWords[key]?.length || 0) >= lobby.wordsPerTeam
+    );
+    if (!allReady) {
+      return res.status(400).json({ error: "Усі команди мають подати слова для наступної команди по колу" });
     }
   }
 
