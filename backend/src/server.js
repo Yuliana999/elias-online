@@ -23,7 +23,11 @@ const app = express();
 app.set("trust proxy", 1);
 app.use(helmet());
 app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
-app.use(express.json({ limit: "10kb" })); // тіла запитів тут маленькі — з запасом
+// 300kb — з запасом під base64-аватарку (стиснута до ~200x200 картинка
+// зазвичай виходить у межах кількох десятків кБ, але base64 роздуває
+// розмір десь на третину; жорсткіший ліміт на сам рядок аватарки — в
+// updateAvatarSchema). Решта тіл запитів лишається маленькою.
+app.use(express.json({ limit: "300kb" }));
 app.use(cookieParser());
 
 app.get("/health", (req, res) => res.json({ ok: true }));
