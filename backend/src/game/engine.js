@@ -132,16 +132,17 @@ export function createGame(lobby) {
 
   if (lobby.mode === "custom") {
     // "Підставний суддя": кожна команда пояснює слова, які написала для
-    // неї ПОПЕРЕДНЯ команда в списку — ланцюжком по колу (A→B→C→D→A) —
-    // тож черга слів своя для кожної команди, а не одна спільна, як у
-    // жанрових режимах. При 2 командах ланцюжок замикається на тих же
+    // неї ПОПЕРЕДНЯ команда в списку — ланцюжком по колу (A→B→C→D→A).
+    // Слова кожної команди — це об'єднаний пул усіх ЇЇ гравців
+    // (lobby.wordsForTeam), а не слова від одного гравця, який останнім
+    // натиснув "Зберегти". При 2 командах ланцюжок замикається на тих же
     // двох (A↔B), тобто це той самий сценарій "пара на пару", що й раніше.
     const keys = teams.map((t) => t.id);
     const wordsByTeam = {};
     const wordIdxByTeam = {};
     keys.forEach((key, i) => {
       const prevKey = keys[(i - 1 + keys.length) % keys.length];
-      wordsByTeam[key] = shuffle(lobby.submittedWords?.[prevKey] || []);
+      wordsByTeam[key] = shuffle(lobby.wordsForTeam(prevKey));
       wordIdxByTeam[key] = 0;
     });
     return { ...base, wordsByTeam, wordIdxByTeam };
