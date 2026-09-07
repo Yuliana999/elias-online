@@ -105,6 +105,10 @@ export const api = {
   // Зміна імені акаунту (екран Профіль) — бекенд у відповідь шле і новий
   // accessToken (як при вході), бо старий містить старе ім'я в payload.
   updateProfile: (name) => apiRequest("/api/users/me", { method: "PATCH", body: { name } }),
+  // Аватарка — data URI від utils/image.js (вже обрізане й стиснуте до
+  // ~200x200 фото). removeAvatar повертає кольоровий кружечок з літерою.
+  updateAvatar: (avatar) => apiRequest("/api/users/me/avatar", { method: "PATCH", body: { avatar } }),
+  removeAvatar: () => apiRequest("/api/users/me/avatar", { method: "DELETE" }),
   // Одиночна гра рахується повністю на клієнті (без лобі/сокетів) — тож
   // після фінішу шлемо результат сюди, щоб він теж потрапив у статистику.
   recordSoloResult: (guessed, skipped) =>
