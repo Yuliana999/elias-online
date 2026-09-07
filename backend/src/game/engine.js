@@ -37,9 +37,13 @@ const TEAM_DEFAULT_NAMES = { A: "Команда 1", B: "Команда 2", C: "�
 function buildTeams(lobby) {
   const nameOf = (id) => lobby.players.find((p) => p.id === id)?.name || id;
 
-  // "team" дозволяє капітану обрати 2-4 команди (lobby.teamCount) — на
-  // відміну від "pairs"/"custom", де завжди рівно дві сторони (A/B).
-  if (lobby.mode === "team") {
+  // "team" і "custom" дозволяють 2-4 команди (lobby.teamCount) — у "team"
+  // це обирає капітан, у "custom" воно росте автоматично разом із
+  // кількістю гравців (lobby.controller.js#joinLobby), але будуються
+  // обидва режими однаково: рівно по тому, кого капітан розподілив
+  // кнопками в teamA..teamD. "pairs" — окремий випадок нижче (завжди дві
+  // сторони, з авто-розподілом, якщо капітан ще нікого не призначив).
+  if (lobby.mode === "team" || lobby.mode === "custom") {
     const teamCount = lobby.teamCount || 2;
     return TEAM_KEYS.slice(0, teamCount).map((key) => {
       const ids = lobby[`team${key}`] || [];
@@ -64,30 +68,17 @@ function buildTeams(lobby) {
     });
   }
 
-  // "pairs"/"custom" — завжди рівно дві сторони (A/B).
+  // "pairs" — завжди рівно дві сторони (A/B), з авто-розподілом "решти"
+  // гравців у команду B, якщо капітан ще нікого явно не призначив
+  // (найпростіший сценарій "я і друг", без ручного розподілу).
   const teamAIds = lobby.teamA.length ? lobby.teamA : [lobby.players[0]?.id].filter(Boolean);
   const customNameA = lobby.teamNames?.A?.trim();
   const customNameB = lobby.teamNames?.B?.trim();
+  const restIds = lobby.players.map((p) => p.id).filter((id) => !teamAIds.includes(id));
 
-  const teams = [
+  return [
     { id: "A", name: customNameA || "Команда 1", color: "coral", playerIds: teamAIds, players: teamAIds.map(nameOf), score: 0, guessed: 0, skipped: 0, explainerIdx: 0 },
-  ];
-
-  if (lobby.mode === "custom" && lobby.teamB.length) {
-    teams.push({
-      id: "B",
-      name: customNameB || "Команда 2",
-      color: "blue",
-      playerIds: lobby.teamB,
-      players: lobby.teamB.map(nameOf),
-      score: 0,
-      guessed: 0,
-      skipped: 0,
-      explainerIdx: 0,
-    });
-  } else {
-    const restIds = lobby.players.map((p) => p.id).filter((id) => !teamAIds.includes(id));
-    teams.push({
+    {
       id: "B",
       name: customNameB || "Суперник",
       color: "blue",
@@ -97,10 +88,8 @@ function buildTeams(lobby) {
       guessed: 0,
       skipped: 0,
       explainerIdx: 0,
-    });
-  }
-
-  return teams;
+    },
+  ];
 }
 
 // Викликається, коли хід команди закінчується (endTurn) — просуває її
@@ -142,17 +131,20 @@ export function createGame(lobby) {
   };
 
   if (lobby.mode === "custom") {
-    // "Підставний суддя": команда A пояснює слова, які написала команда B
-    // (і навпаки) — тож черга слів своя для кожної команди, а не одна
-    // спільна, як у жанрових режимах.
-    return {
-      ...base,
-      wordsByTeam: {
-        A: shuffle(lobby.submittedWords?.B || []),
-        B: shuffle(lobby.submittedWords?.A || []),
-      },
-      wordIdxByTeam: { A: 0, B: 0 },
-    };
+    // "Підставний суддя": кожна команда пояснює слова, які написала для
+    // неї ПОПЕРЕДНЯ команда в списку — ланцюжком по колу (A→B→C→D→A) —
+    // тож черга слів своя для кожної команди, а не одна спільна, як у
+    // жанрових режимах. При 2 командах ланцюжок замикається на тих же
+    // двох (A↔B), тобто це той самий сценарій "пара на пару", що й раніше.
+    const keys = teams.map((t) => t.id);
+    const wordsByTeam = {};
+    const wordIdxByTeam = {};
+    keys.forEach((key, i) => {
+      const prevKey = keys[(i - 1 + keys.length) % keys.length];
+      wordsByTeam[key] = shuffle(lobby.submittedWords?.[prevKey] || []);
+      wordIdxByTeam[key] = 0;
+    });
+    return { ...base, wordsByTeam, wordIdxByTeam };
   }
 
   const bank = WORD_BANKS[lobby.genre] || WORD_BANKS.general;
