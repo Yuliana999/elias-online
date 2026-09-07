@@ -6,9 +6,9 @@ import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../utils/
 function setRefreshCookie(res, token) {
   res.cookie("refreshToken", token, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 днів
+    sameSite: "none",
+    secure: true,
+    maxAge: 30 * 24 * 60 * 60 * 1000,
   });
 }
 
