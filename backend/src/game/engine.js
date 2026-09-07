@@ -30,24 +30,50 @@ function shuffle(arr) {
 // playerIds (публічних id), щоб сервер міг перевіряти, чий зараз хід.
 // explainerIdx — індекс гравця команди, який пояснює цього ходу; так
 // пояснювач ротується по колу, а не завжди перший у списку.
+const TEAM_KEYS = ["A", "B", "C", "D"];
+const TEAM_COLORS = { A: "coral", B: "blue", C: "amber", D: "mint" };
+const TEAM_DEFAULT_NAMES = { A: "Команда 1", B: "Команда 2", C: "Команда 3", D: "Команда 4" };
+
 function buildTeams(lobby) {
   const nameOf = (id) => lobby.players.find((p) => p.id === id)?.name || id;
+
+  // "team" дозволяє капітану обрати 2-4 команди (lobby.teamCount) — на
+  // відміну від "pairs"/"custom", де завжди рівно дві сторони (A/B).
+  if (lobby.mode === "team") {
+    const teamCount = lobby.teamCount || 2;
+    return TEAM_KEYS.slice(0, teamCount).map((key) => {
+      const ids = lobby[`team${key}`] || [];
+      const customName = lobby.teamNames?.[key]?.trim();
+      return {
+        id: key,
+        name: customName || TEAM_DEFAULT_NAMES[key],
+        color: TEAM_COLORS[key],
+        playerIds: ids,
+        // guessed/skipped — власний лічильник команди (окремо від
+        // team.score, який дорівнює guessed, але лишається під старою
+        // назвою, щоб не ламати фронтенд, який вже його малює). Потрібні
+        // для профілю гравця зі статистикою: після завершення партії
+        // sockets/index.js#recordGameStats додає ці числа кожному
+        // гравцю команди (User.stats.wordsGuessed/wordsMissed).
+        players: ids.length ? ids.map(nameOf) : [TEAM_DEFAULT_NAMES[key]],
+        score: 0,
+        guessed: 0,
+        skipped: 0,
+        explainerIdx: 0,
+      };
+    });
+  }
+
+  // "pairs"/"custom" — завжди рівно дві сторони (A/B).
   const teamAIds = lobby.teamA.length ? lobby.teamA : [lobby.players[0]?.id].filter(Boolean);
-  // Гравці могли перейменувати свою команду в лобі (lobby.controller.js
-  // #renameTeam) — якщо так, показуємо їхню назву, інакше дефолтна.
   const customNameA = lobby.teamNames?.A?.trim();
   const customNameB = lobby.teamNames?.B?.trim();
 
-  // guessed/skipped — власний лічильник команди (окремо від team.score,
-  // який дорівнює guessed, але лишається під старою назвою, щоб не
-  // ламати фронтенд, який вже його малює). Потрібні для профілю гравця
-  // зі статистикою: після завершення партії sockets/index.js#recordGameStats
-  // додає ці числа кожному гравцю команди (User.stats.wordsGuessed/wordsMissed).
   const teams = [
     { id: "A", name: customNameA || "Команда 1", color: "coral", playerIds: teamAIds, players: teamAIds.map(nameOf), score: 0, guessed: 0, skipped: 0, explainerIdx: 0 },
   ];
 
-  if ((lobby.mode === "team" || lobby.mode === "custom") && lobby.teamB.length) {
+  if (lobby.mode === "custom" && lobby.teamB.length) {
     teams.push({
       id: "B",
       name: customNameB || "Команда 2",
@@ -63,7 +89,7 @@ function buildTeams(lobby) {
     const restIds = lobby.players.map((p) => p.id).filter((id) => !teamAIds.includes(id));
     teams.push({
       id: "B",
-      name: customNameB || (lobby.mode === "pairs" ? "Суперник" : "Команда 2"),
+      name: customNameB || "Суперник",
       color: "blue",
       playerIds: restIds,
       players: restIds.length ? restIds.map(nameOf) : ["Пара 2"],
