@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { GENRES, ROUND_DURATIONS, SCORING_MODES } from "../data/wordBanks.js";
-import { MAX_TEAM_SIZE, MAX_TEAM_LOBBY_SIZE } from "../data/limits.js";
+import { MAX_TEAM_SIZE, MAX_TEAM_LOBBY_SIZE, MIN_TEAM_COUNT, MAX_TEAM_COUNT, TEAM_KEYS, teamLobbySize } from "../data/limits.js";
 import { avatarHue } from "../utils/gameHelpers.js";
 
 const ROUNDS_OPTIONS = [1, 2, 3, 4, 5, 6];
@@ -249,13 +249,18 @@ export default function Lobby({
     );
   }
 
-  const teamOf = (id) => (lobby.teamA.includes(id) ? "A" : lobby.teamB.includes(id) ? "B" : null);
+  // Скільки команд активно в цьому лобі: "team" дозволяє капітану обрати
+  // 2-4 (lobby.teamCount), "pairs"/"custom" завжди рівно про дві сторони.
+  const teamCount = mode === "team" ? lobby.teamCount || MIN_TEAM_COUNT : 2;
+  const activeTeamKeys = TEAM_KEYS.slice(0, teamCount);
+  const teamArray = (key) => lobby[`team${key}`] || [];
+  const teamOf = (id) => activeTeamKeys.find((key) => teamArray(key).includes(id)) || null;
 
   // Перейменування команди: доступно будь-кому з ЇЇ учасників (не лише
   // капітану), і лише поки лобі не стартувало — після старту заголовок
   // команди в самій грі (Game.jsx) уже фіксований на весь матч.
   const myTeam = teamOf(user.id);
-  const [editingTeam, setEditingTeam] = useState(null); // "A" | "B" | null
+  const [editingTeam, setEditingTeam] = useState(null); // "A" | "B" | "C" | "D" | null
   const [teamNameDraft, setTeamNameDraft] = useState("");
   const [renamingBusy, setRenamingBusy] = useState(false);
 
@@ -281,7 +286,7 @@ export default function Lobby({
   // учасника саме цієї команди — ще й клікабельний олівець поруч, що
   // відкриває поле для перейменування.
   function TeamTitle({ team, defaultLabel }) {
-    const displayName = (team === "A" ? lobby.teamNames?.A : lobby.teamNames?.B) || defaultLabel;
+    const displayName = lobby.teamNames?.[team] || defaultLabel;
     const canRename = myTeam === team && lobby.status === "waiting";
 
     if (editingTeam === team) {
@@ -331,7 +336,9 @@ export default function Lobby({
   const wordsReady = !isCustom || (lobby.wordsStatus?.A?.ready && lobby.wordsStatus?.B?.ready);
   const canStart = (mode === "pairs"
     ? lobby.players.length >= 1
-    : lobby.teamA.length >= 1 && lobby.teamB.length >= 1) && wordsReady;
+    // Кожна активна команда має мати хоча б одного гравця — інакше хід
+    // ніколи до неї не дійде.
+    : activeTeamKeys.every((key) => teamArray(key).length >= 1)) && wordsReady;
 
   const genreLabel = GENRES.find((g) => g.id === lobby.genre)?.label || "Загальні слова";
   const roundsLabel = lobby.totalRounds || 3;
@@ -339,21 +346,24 @@ export default function Lobby({
   const scoringLabel = lobby.scoring || "classic";
   const scoringDisplayLabel = SCORING_MODES.find((s) => s.id === scoringLabel)?.label || "Звичайний";
 
+  const TEAM_DEFAULT_LABELS = { A: "Команда 1", B: "Команда 2", C: "Команда 3", D: "Команда 4" };
+  const TEAM_CHIP_CLASS = { A: "chip-coral", B: "chip-blue", C: "chip-amber", D: "chip-mint" };
+
   // Щоб усім (не лише капітану) було зрозуміло, хто з ким і проти кого
-  // грає, у командному режимі малюємо гравців трьома групами замість
-  // одного суцільного списку.
-  const teamAPlayers = lobby.players.filter((p) => lobby.teamA.includes(p.id));
-  const teamBPlayers = lobby.players.filter((p) => lobby.teamB.includes(p.id));
+  // грає, у командному режимі малюємо гравців групами замість одного
+  // суцільного списку — по одній групі на активну команду.
+  const teamGroups = activeTeamKeys.map((key) => ({
+    key,
+    title: TEAM_DEFAULT_LABELS[key],
+    chipClass: TEAM_CHIP_CLASS[key],
+    players: lobby.players.filter((p) => teamArray(key).includes(p.id)),
+  }));
   const unassignedPlayers = lobby.players.filter((p) => !teamOf(p.id));
 
   // Команда заповнена, якщо в ній уже MAX_TEAM_SIZE гравців — тоді кнопка
   // призначення в неї недоступна для всіх, крім тих, хто вже там.
-  const teamAFull = teamAPlayers.length >= MAX_TEAM_SIZE;
-  const teamBFull = teamBPlayers.length >= MAX_TEAM_SIZE;
-  // Для кнопок призначення гравця в команду (нижче) — щоб капітан теж
-  // бачив актуальні назви, а не завжди дефолтні "Команда 1"/"Команда 2".
-  const teamALabel = lobby.teamNames?.A || "Команда 1";
-  const teamBLabel = lobby.teamNames?.B || "Команда 2";
+  const isTeamFull = (key) => teamArray(key).length >= MAX_TEAM_SIZE;
+  const teamLabel = (key) => lobby.teamNames?.[key] || TEAM_DEFAULT_LABELS[key];
 
   const handleStart = async () => {
     setStartError("");
@@ -438,6 +448,24 @@ export default function Lobby({
               </div>
               <p className="hint">{SCORING_MODES.find((s) => s.id === scoringLabel)?.hint}</p>
             </div>
+            {mode === "team" && (
+              <div className="settings-block">
+                <span className="settings-label">Кількість команд</span>
+                <div className="chip-row">
+                  {Array.from({ length: MAX_TEAM_COUNT - MIN_TEAM_COUNT + 1 }, (_, i) => MIN_TEAM_COUNT + i).map((n) => (
+                    <button
+                      key={n}
+                      className={teamCount === n ? "chip chip-amber active" : "chip chip-amber"}
+                      onClick={() => onSettings({ teamCount: n })}
+                      type="button"
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <p className="hint">Максимум {teamLobbySize(teamCount)} гравців у лобі при {teamCount} командах по {MAX_TEAM_SIZE}.</p>
+              </div>
+            )}
             {isCustom ? (
               <div className="settings-block">
                 <span className="settings-label">Слів на команду</span>
@@ -482,18 +510,17 @@ export default function Lobby({
 
         <p className="hint">
           Друзі приєднуються самі: заходять у свій акаунт і вводять код лобі в меню.
-          {mode === "team" || isCustom ? ` Лобі вміщує до ${MAX_TEAM_LOBBY_SIZE} гравців (${lobby.players.length}/${MAX_TEAM_LOBBY_SIZE}).` : ""}
+          {mode === "team" || isCustom ? ` Лобі вміщує до ${mode === "team" ? teamLobbySize(teamCount) : MAX_TEAM_LOBBY_SIZE} гравців (${lobby.players.length}/${mode === "team" ? teamLobbySize(teamCount) : MAX_TEAM_LOBBY_SIZE}).` : ""}
         </p>
 
         {mode === "team" || isCustom ? (
           // Групуємо за командою, щоб усім (не лише капітану) було видно
           // хто з ким грає в парі й проти кого — раніше це бачив тільки
-          // капітан по підсвіченій кнопці біля кожного гравця.
+          // капітан по підсвіченій кнопці біля кожного гравця. У "team"
+          // групи динамічні (2-4, за teamGroups вище), у "custom" завжди
+          // рівно дві.
           <div className="team-groups">
-            {[
-              { key: "A", title: "Команда 1", chipClass: "chip-coral", players: teamAPlayers },
-              { key: "B", title: "Команда 2", chipClass: "chip-blue", players: teamBPlayers },
-            ].map((group) => (
+            {teamGroups.map((group) => (
               <div className="team-group" key={group.key}>
                 <span className={`settings-label team-group-title ${group.chipClass}`}>
                   <TeamTitle team={group.key} defaultLabel={group.title} />
@@ -508,22 +535,17 @@ export default function Lobby({
                       <KickButton player={p} />
                       {isCaptain && (
                         <div className="team-btns">
-                          <button
-                            className={teamOf(p.id) === "A" ? "chip chip-coral active" : "chip chip-coral"}
-                            onClick={() => onAssign(p.id, "A")}
-                            disabled={teamOf(p.id) !== "A" && teamAFull}
-                            title={teamOf(p.id) !== "A" && teamAFull ? `У команді вже максимум гравців (${MAX_TEAM_SIZE})` : undefined}
-                          >
-                            {teamALabel}
-                          </button>
-                          <button
-                            className={teamOf(p.id) === "B" ? "chip chip-blue active" : "chip chip-blue"}
-                            onClick={() => onAssign(p.id, "B")}
-                            disabled={teamOf(p.id) !== "B" && teamBFull}
-                            title={teamOf(p.id) !== "B" && teamBFull ? `У команді вже максимум гравців (${MAX_TEAM_SIZE})` : undefined}
-                          >
-                            {teamBLabel}
-                          </button>
+                          {activeTeamKeys.map((key) => (
+                            <button
+                              key={key}
+                              className={teamOf(p.id) === key ? `chip ${TEAM_CHIP_CLASS[key]} active` : `chip ${TEAM_CHIP_CLASS[key]}`}
+                              onClick={() => onAssign(p.id, key)}
+                              disabled={teamOf(p.id) !== key && isTeamFull(key)}
+                              title={teamOf(p.id) !== key && isTeamFull(key) ? `У команді вже максимум гравців (${MAX_TEAM_SIZE})` : undefined}
+                            >
+                              {teamLabel(key)}
+                            </button>
+                          ))}
                         </div>
                       )}
                     </div>
@@ -545,22 +567,17 @@ export default function Lobby({
                       <KickButton player={p} />
                       {isCaptain ? (
                         <div className="team-btns">
-                          <button
-                            className="chip chip-coral"
-                            onClick={() => onAssign(p.id, "A")}
-                            disabled={teamAFull}
-                            title={teamAFull ? `У команді вже максимум гравців (${MAX_TEAM_SIZE})` : undefined}
-                          >
-                            {teamALabel}
-                          </button>
-                          <button
-                            className="chip chip-blue"
-                            onClick={() => onAssign(p.id, "B")}
-                            disabled={teamBFull}
-                            title={teamBFull ? `У команді вже максимум гравців (${MAX_TEAM_SIZE})` : undefined}
-                          >
-                            {teamBLabel}
-                          </button>
+                          {activeTeamKeys.map((key) => (
+                            <button
+                              key={key}
+                              className={`chip ${TEAM_CHIP_CLASS[key]}`}
+                              onClick={() => onAssign(p.id, key)}
+                              disabled={isTeamFull(key)}
+                              title={isTeamFull(key) ? `У команді вже максимум гравців (${MAX_TEAM_SIZE})` : undefined}
+                            >
+                              {teamLabel(key)}
+                            </button>
+                          ))}
                         </div>
                       ) : (
                         <span className="hint">Чекає розподілу</span>
