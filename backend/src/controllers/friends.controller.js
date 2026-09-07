@@ -11,6 +11,7 @@ function toPeer(user) {
   return {
     id: user.publicId,
     name: user.name,
+    avatar: user.avatar || null,
     stats: {
       gamesPlayed,
       accuracy: attempts > 0 ? Math.round((wordsGuessed / attempts) * 100) : 0,
