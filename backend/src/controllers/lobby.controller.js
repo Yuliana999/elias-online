@@ -255,11 +255,13 @@ export async function submitWords(req, res) {
   if (!team) {
     return res.status(400).json({ error: "Спочатку приєднайся до команди" });
   }
-  if (words.length < lobby.wordsPerTeam) {
-    return res.status(400).json({ error: `Потрібно щонайменше ${lobby.wordsPerTeam} слів` });
-  }
 
-  lobby.submittedWords[team] = words;
+  // Кожен гравець команди пише свій список окремо — вони НЕ перезаписують
+  // один одного, а об'єднуються (lobby.wordsForTeam) в спільний пул для
+  // суперника. Тож тут більше не вимагаємо, щоб один-єдиний гравець
+  // дотягнув до wordsPerTeam самотужки — це перевіряється по сумі
+  // команди в startLobby нижче.
+  lobby.submittedWordsByPlayer.set(req.userId, words);
   await lobby.save();
 
   broadcastLobby(req, lobby);
@@ -284,9 +286,7 @@ export async function startLobby(req, res) {
     return res.status(400).json({ error: "Ще не всі готові до старту" });
   }
   if (lobby.mode === "custom") {
-    const allReady = activeTeamKeys(lobby).every(
-      (key) => (lobby.submittedWords[key]?.length || 0) >= lobby.wordsPerTeam
-    );
+    const allReady = activeTeamKeys(lobby).every((key) => lobby.wordsForTeam(key).length >= lobby.wordsPerTeam);
     if (!allReady) {
       return res.status(400).json({ error: "Усі команди мають подати слова для наступної команди по колу" });
     }
@@ -363,6 +363,12 @@ export async function kickPlayer(req, res) {
   lobby.players = lobby.players.filter((p) => p.id !== playerId);
   for (const key of TEAM_KEYS) {
     lobby[teamField(key)] = getTeamArray(lobby, key).filter((id) => id !== playerId);
+  }
+  // Не обов'язково для коректності wordsForTeam (він і так фільтрує по
+  // поточному складу команди), але прибираємо, щоб не тримати сирітські
+  // дані кикнутого гравця в лобі.
+  if (lobby.mode === "custom") {
+    lobby.submittedWordsByPlayer.delete(playerId);
   }
   await lobby.save();
 
