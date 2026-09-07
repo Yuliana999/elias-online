@@ -25,7 +25,7 @@ services:
         value: 30d
       # Повний https-домен фронтенда, підставляється Render'ом автоматично
       - key: CLIENT_ORIGIN
-        value: ${elias-frontend.url}
+        value: https://elias-backend.onrender.com
 
   - type: web
     name: elias-frontend
@@ -43,4 +43,4 @@ services:
       # бекенд має бути задеплоєний ПЕРШИМ (Render у Blueprint і так
       # деплоїть services по черзі зверху вниз — саме тому backend вище).
       - key: VITE_API_URL
-        value: ${elias-backend.url}
+        value: https://elias-frontend.onrender.com
