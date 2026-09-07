@@ -1,0 +1,47 @@
+services:
+  - type: web
+    name: elias-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install
+    startCommand: npm run start
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: NODE_ENV
+        value: production
+      # Значення нижче виставляються вручну в Render Dashboard →
+      # твій сервіс → Environment (не тримай справжні секрети в git):
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: JWT_ACCESS_EXPIRES
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES
+        value: 30d
+      # Повний https-домен фронтенда, підставляється Render'ом автоматично
+      - key: CLIENT_ORIGIN
+        value: ${elias-frontend.url}
+
+  - type: web
+    name: elias-frontend
+    runtime: static
+    rootDir: frontend
+    plan: free
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      # Повний https-домен бекенда, підставляється Render'ом автоматично.
+      # Важливо: Vite "запікає" цю змінну під час білда фронтенда, тому
+      # бекенд має бути задеплоєний ПЕРШИМ (Render у Blueprint і так
+      # деплоїть services по черзі зверху вниз — саме тому backend вище).
+      - key: VITE_API_URL
+        value: ${elias-backend.url}

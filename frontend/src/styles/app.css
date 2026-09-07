@@ -1,0 +1,477 @@
+      @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+      .elias-app {
+        --bg: #16302B;
+        --bg-elevated: #1E3F38;
+        --card: #FBF6EC;
+        --ink: #14231F;
+        --ink-soft: #3B5750;
+        --amber: #E8A33D;
+        --coral: #E0654A;
+        --blue: #4E8DC4;
+        --muted: #9FB8AE;
+        --line: rgba(251,246,236,0.14);
+        --gold-glow: #F4C978;
+        --shadow-deep: #0B1D18;
+
+        background:
+          radial-gradient(ellipse 900px 500px at 50% -10%, rgba(232,163,61,0.12), transparent 60%),
+          radial-gradient(circle at 4px 4px, rgba(251,246,236,0.05) 1.5px, transparent 0) 0 0/28px 28px,
+          var(--bg);
+        color: var(--card);
+        font-family: 'Manrope', sans-serif;
+        /* 100vh на телефонах "стрибає", коли з'являється/ховається адресний
+           рядок браузера — dvh рахує реальну видиму висоту. vh лишаємо як
+           фолбек для старих браузерів, що dvh ще не підтримують. */
+        min-height: 100vh;
+        min-height: 100dvh;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 32px 20px 60px;
+        /* На айфонах з "чолкою"/скругленими кутами екрана в альбомній
+           орієнтації контент інакше заходить під вирізи. */
+        padding-left: max(20px, env(safe-area-inset-left));
+        padding-right: max(20px, env(safe-area-inset-right));
+        padding-bottom: max(60px, env(safe-area-inset-bottom) + 24px);
+        display: flex;
+        justify-content: center;
+      }
+      .elias-app *, .elias-app *::before, .elias-app *::after { box-sizing: border-box; }
+
+      .screen { width: 100%; max-width: 720px; }
+      .screen.center { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 24px; }
+
+      h1, h2 {
+        font-family: 'Fraunces', serif;
+        font-weight: 600;
+        line-height: 1.1;
+        margin: 0 0 12px;
+        color: var(--card);
+      }
+      h1 { font-size: clamp(28px, 5vw, 40px); max-width: 14ch; }
+      h2 { font-size: 26px; }
+      p { line-height: 1.55; color: var(--muted); margin: 0 0 16px; }
+      .lede { max-width: 46ch; font-size: 16px; }
+
+      /* Landing */
+      .landing { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 40px; }
+      .hero { display: flex; flex-direction: column; align-items: center; gap: 18px; padding-top: 12px; }
+
+      .word-card {
+        background: var(--card);
+        color: var(--ink);
+        border-radius: 18px;
+        padding: 28px 36px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 220px;
+        box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+      }
+      .word-card.tilt { transform: rotate(-3deg); }
+      .word-card-label { font-size: 13px; color: var(--ink-soft); font-family: 'Manrope'; }
+      .word-card-word { font-family: 'Fraunces', serif; font-size: 30px; font-weight: 600; }
+      .word-card.big { min-width: 260px; padding: 40px 36px; margin: 8px 0; }
+      .word-card.big .word-card-word { font-size: 40px; }
+
+      /* Landing hero: fanned deck of cards */
+      .card-fan {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        height: 168px;
+        width: 100%;
+        margin-bottom: 4px;
+      }
+      .card-fan .word-card {
+        position: absolute;
+        min-width: 176px;
+        padding: 22px 26px;
+        opacity: 0;
+        animation: fan-in 0.6s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+      }
+      .card-fan .word-card-word { font-size: 25px; }
+      .fan-left {
+        transform: translateX(-108px) rotate(-13deg);
+        z-index: 1;
+        animation-delay: 0.05s;
+      }
+      .fan-right {
+        transform: translateX(108px) rotate(11deg);
+        z-index: 1;
+        animation-delay: 0.15s;
+      }
+      .fan-center {
+        z-index: 2;
+        min-width: 200px;
+        padding: 28px 34px;
+        box-shadow: 0 22px 46px var(--shadow-deep), 0 0 0 1px rgba(232,163,61,0.25);
+        animation-delay: 0s;
+      }
+      .fan-center .word-card-word { font-size: 32px; color: var(--coral); }
+      @keyframes fan-in {
+        from { opacity: 0; transform: translateY(16px) scale(0.94) rotate(0deg); }
+        to { opacity: 1; }
+      }
+      .fan-left.word-card { animation-name: fan-in-left; }
+      .fan-right.word-card { animation-name: fan-in-right; }
+      @keyframes fan-in-left {
+        from { opacity: 0; transform: translateX(-108px) translateY(10px) rotate(-2deg); }
+        to { opacity: 1; transform: translateX(-108px) rotate(-13deg); }
+      }
+      @keyframes fan-in-right {
+        from { opacity: 0; transform: translateX(108px) translateY(10px) rotate(2deg); }
+        to { opacity: 1; transform: translateX(108px) rotate(11deg); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .card-fan .word-card { animation: none; opacity: 1; }
+      }
+      @media (max-width: 480px) {
+        .card-fan { height: 148px; }
+        .fan-left { transform: translateX(-64px) rotate(-13deg); }
+        .fan-right { transform: translateX(64px) rotate(11deg); }
+        @keyframes fan-in-left { from { opacity:0; transform: translateX(-64px) translateY(10px) rotate(-2deg);} to { opacity:1; transform: translateX(-64px) rotate(-13deg);} }
+        @keyframes fan-in-right { from { opacity:0; transform: translateX(64px) translateY(10px) rotate(2deg);} to { opacity:1; transform: translateX(64px) rotate(11deg);} }
+      }
+
+      .cta-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+      .rules {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0,1fr));
+        gap: 20px;
+        width: 100%;
+        border-top: 1px solid var(--line);
+        padding-top: 28px;
+      }
+      .rule { text-align: left; }
+      .rule-num {
+        font-family: 'Fraunces', serif;
+        font-size: 18px;
+        color: var(--amber);
+        display: block;
+        margin-bottom: 6px;
+      }
+      .rule p { font-size: 14px; margin: 0; }
+
+      /* Buttons */
+      .btn {
+        font-family: 'Manrope', sans-serif;
+        font-weight: 700;
+        font-size: 15px;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 24px;
+        cursor: pointer;
+        transition: transform 0.15s ease, opacity 0.15s ease;
+      }
+      .btn:hover { transform: translateY(-1px); }
+      .btn:active { transform: translateY(0); }
+      .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+      .btn-primary { background: var(--amber); color: var(--ink); box-shadow: 0 10px 24px rgba(232,163,61,0.28); }
+      .btn-ghost { background: transparent; color: var(--card); border: 1px solid var(--line); }
+      .btn-block { width: 100%; margin-top: 6px; }
+      .btn-small { padding: 8px 14px; font-size: 13px; }
+      .btn-skip { background: var(--bg-elevated); color: var(--card); border: 1px solid var(--line); flex: 1; }
+      .btn-correct { background: var(--coral); color: var(--card); flex: 1.4; }
+
+      .link-back {
+        background: none; border: none; color: var(--muted); font-family: 'Manrope';
+        font-size: 13px; cursor: pointer; padding: 0; margin-bottom: 18px; text-align: left; align-self: flex-start;
+      }
+      .guest-cta {
+        align-self: center; text-align: center; margin: -4px 0 0; text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+      .guest-cta:hover { color: var(--card); }
+
+      /* Panels */
+      .panel {
+        background: var(--bg-elevated);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 28px;
+        width: 100%;
+        max-width: 420px;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 24px 48px var(--shadow-deep);
+      }
+      .panel.wide { max-width: 560px; }
+
+      .tabs { display: flex; gap: 6px; margin-bottom: 20px; background: var(--bg); border-radius: 10px; padding: 4px; }
+      .tab { flex: 1; background: none; border: none; color: var(--muted); padding: 10px; border-radius: 8px; font-family: 'Manrope'; font-weight: 600; cursor: pointer; }
+      .tab.active { background: var(--amber); color: var(--ink); }
+
+      label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+      input {
+        font-family: 'Manrope'; font-size: 15px; padding: 12px 14px; border-radius: 10px;
+        border: 1px solid var(--line); background: var(--bg); color: var(--card);
+      }
+      input::placeholder { color: var(--muted); }
+      input:focus, .btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+      .words-textarea {
+        font-family: 'Manrope'; font-size: 14px; padding: 12px 14px; border-radius: 10px;
+        border: 1px solid var(--line); background: var(--bg); color: var(--card);
+        resize: vertical; margin-bottom: 10px;
+      }
+      .words-textarea::placeholder { color: var(--muted); }
+      .words-textarea:focus { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+      .hint { font-size: 13px; margin-top: 10px; }
+      .error { color: var(--coral); font-size: 13px; margin: -8px 0 10px; }
+
+      /* Notice banner (напр. "капітан прибрав тебе з лобі") */
+      .notice {
+        display: flex; justify-content: space-between; align-items: center; gap: 10px;
+        background: rgba(232,163,61,0.14); border: 1px solid var(--amber); color: var(--card);
+        border-radius: 10px; padding: 10px 14px; margin-bottom: 20px; font-size: 13px;
+      }
+      .notice-close { background: none; border: none; color: var(--card); font-size: 18px; cursor: pointer; line-height: 1; padding: 0 2px; }
+
+      /* Kick button (капітан прибирає гравця з лобі) */
+      .btn-icon-kick {
+        background: transparent; border: 1px solid var(--line); color: var(--muted);
+        border-radius: 50%; width: 32px; height: 32px; flex-shrink: 0; margin-left: auto;
+        cursor: pointer; font-size: 13px; line-height: 1; display: flex; align-items: center; justify-content: center;
+      }
+      .btn-icon-kick:hover { border-color: var(--coral); color: var(--coral); }
+      .btn-icon-kick:disabled { opacity: 0.4; cursor: not-allowed; }
+
+      /* Олівець перейменування своєї команди в лобі (Lobby.jsx) — менший
+         і без margin-left:auto (той призначений для іншого контексту,
+         останнього елемента в player-row). */
+      .btn-icon-edit {
+        background: transparent; border: none; color: var(--muted);
+        width: 22px; height: 22px; flex-shrink: 0; padding: 0;
+        cursor: pointer; font-size: 13px; line-height: 1;
+        display: inline-flex; align-items: center; justify-content: center;
+        vertical-align: middle;
+      }
+      .btn-icon-edit:hover { color: var(--amber); }
+      .btn-icon-edit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+      .team-name-input {
+        font-family: 'Manrope'; font-size: 13px; padding: 5px 9px; border-radius: 8px;
+        border: 1px solid var(--line); background: var(--bg); color: var(--card);
+        width: 140px; min-width: 0;
+      }
+
+      /* Menu */
+      .id-card {
+        display: flex; align-items: center; justify-content: space-between;
+        background: var(--bg); border-radius: 12px; padding: 14px 16px; margin-bottom: 22px;
+      }
+      .id-label { display: block; font-size: 12px; color: var(--muted); }
+      .id-value { font-family: 'Fraunces', serif; font-size: 20px; letter-spacing: 1px; }
+
+      /* Профіль гравця зі статистикою (Menu) */
+      .stats-row { display: flex; gap: 10px; margin-bottom: 22px; }
+      .stats-cell {
+        flex: 1; display: flex; flex-direction: column; gap: 2px; align-items: center;
+        background: var(--bg); border-radius: 12px; padding: 12px 10px; text-align: center;
+      }
+      .stats-cell strong { font-family: 'Fraunces', serif; font-size: 20px; color: var(--amber); }
+      .stats-cell span { font-size: 12px; color: var(--muted); }
+
+      /* Рейтинг лідерів лобі */
+      .leaderboard { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 20px; }
+      .leaderboard-row {
+        display: flex; align-items: center; gap: 10px; background: var(--bg);
+        border-radius: 10px; padding: 8px 12px;
+      }
+      .leaderboard-rank { font-family: 'Fraunces', serif; color: var(--muted); width: 18px; flex-shrink: 0; }
+      .leaderboard-row.top .leaderboard-rank { color: var(--gold-glow); }
+      .leaderboard-name { flex: 1; font-size: 14px; }
+      .leaderboard-stat { font-size: 12px; color: var(--muted); white-space: nowrap; }
+      .leaderboard-stat strong { color: var(--card); font-weight: 600; }
+
+      /* Улюблені колоди слів (режим "Підставний суддя") */
+      .deck-row {
+        display: flex; align-items: center; gap: 8px; background: var(--bg);
+        border-radius: 8px; padding: 8px 10px; font-size: 13px;
+      }
+      .deck-row-name { flex: 1; }
+      .deck-row-count { color: var(--muted); font-size: 12px; }
+      .deck-list { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+      .deck-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+
+      .mode-grid { display: grid; gap: 12px; margin-bottom: 20px; }
+      .mode-card {
+        text-align: left; background: var(--bg); border: 1px solid var(--line); border-radius: 14px;
+        padding: 18px 20px; cursor: pointer; display: flex; flex-direction: column; gap: 4px;
+        transition: border-color 0.15s ease;
+      }
+      .mode-card:hover { border-color: var(--amber); }
+      .mode-card-title { font-family: 'Fraunces', serif; font-size: 18px; color: var(--card); }
+      .mode-card-desc { font-size: 13px; color: var(--muted); }
+
+      /* Lobby */
+      .lobby-code { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--bg); border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; font-size: 13px; color: var(--muted); }
+      .lobby-code strong { font-family: 'Fraunces', serif; font-size: 18px; color: var(--card); letter-spacing: 1px; }
+
+      .add-player-row { display: flex; gap: 8px; margin-bottom: 6px; }
+      .add-player-row input { flex: 1; }
+
+      .players-list { display: flex; flex-direction: column; gap: 8px; margin: 16px 0 22px; }
+      .player-row {
+        display: flex; align-items: center; gap: 10px; background: var(--bg);
+        border-radius: 10px; padding: 10px 14px; flex-wrap: wrap;
+      }
+      .player-name { font-weight: 600; flex: 1; min-width: 80px; }
+      .player-row input { flex: 1; min-width: 120px; }
+      .player-id { font-size: 12px; color: var(--muted); }
+      .team-btns { display: flex; gap: 6px; width: 100%; }
+
+      .team-groups { display: flex; flex-direction: column; gap: 18px; margin: 16px 0 22px; }
+      .team-group { display: flex; flex-direction: column; gap: 8px; }
+      .team-group-title { padding-left: 10px; border-left: 3px solid var(--line); display: flex; align-items: center; gap: 4px; }
+      .team-title-name { display: inline-flex; align-items: center; gap: 4px; }
+      .team-group-count { color: var(--muted); font-weight: 600; }
+      .team-group-title.chip-coral { border-left-color: var(--coral); }
+      .team-group-title.chip-blue { border-left-color: var(--blue); }
+      .team-group .players-list { margin: 0; }
+      .team-group-empty { margin: 0; padding: 8px 14px; }
+
+      .player-avatar {
+        width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Fraunces', serif; font-size: 14px; font-weight: 600; color: var(--ink);
+      }
+      .player-avatar.amber { background: var(--amber); }
+      .player-avatar.coral { background: var(--coral); color: var(--card); }
+      .player-avatar.blue { background: var(--blue); color: var(--card); }
+
+      .chip {
+        font-family: 'Manrope'; font-size: 12px; font-weight: 700; border-radius: 999px;
+        padding: 9px 14px; min-height: 36px; cursor: pointer; border: 1px solid var(--line);
+        background: transparent; color: var(--muted);
+      }
+      .chip-coral.active { background: var(--coral); color: var(--card); border-color: var(--coral); }
+      .chip-blue.active { background: var(--blue); color: var(--card); border-color: var(--blue); }
+      .chip-amber.active { background: var(--amber); color: var(--ink); border-color: var(--amber); }
+      .chip:disabled { cursor: not-allowed; opacity: 0.4; }
+      .chip:disabled.active { opacity: 0.7; }
+
+      .settings-section { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+      .settings-block { display: flex; flex-direction: column; gap: 8px; }
+      .settings-label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+      .chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+      /* Game */
+      .game-panel { align-items: center; text-align: center; position: relative; }
+
+      .btn-icon-mute {
+        position: absolute; top: 18px; right: 18px;
+        background: transparent; border: 1px solid var(--line); color: var(--card);
+        width: 40px; height: 40px; border-radius: 999px; font-size: 16px; line-height: 1;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+      }
+      .btn-icon-mute:hover { border-color: var(--amber); }
+
+      .score-row { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; justify-content: center; }
+      .score-pill {
+        display: flex; gap: 8px; align-items: baseline; background: var(--bg); border-radius: 999px;
+        padding: 8px 16px; font-size: 13px; border: 1px solid transparent;
+      }
+      .score-pill strong { font-family: 'Fraunces', serif; font-size: 16px; }
+      .score-pill.coral.current { border-color: var(--coral); }
+      .score-pill.blue.current { border-color: var(--blue); }
+      .score-pill.amber.current { border-color: var(--amber); }
+
+      .round-label { font-size: 13px; margin-bottom: 6px; }
+
+      .round-progress {
+        width: 100%; height: 6px; border-radius: 999px; background: var(--bg);
+        overflow: hidden; margin-bottom: 14px;
+      }
+      .round-progress-fill { height: 100%; border-radius: 999px; transition: width 1s linear, background 0.3s ease; }
+      .round-progress-fill.urgent { animation: pulse-ring 1s ease-in-out infinite; }
+
+      .timer-ring-wrap { position: relative; width: 120px; height: 120px; margin-bottom: 6px; }
+      .timer-ring { width: 120px; height: 120px; transform: rotate(-90deg); }
+      .timer-ring-track { fill: none; stroke: var(--line); stroke-width: 8; }
+      .timer-ring-progress {
+        fill: none; stroke-width: 8; stroke-linecap: round;
+        transition: stroke-dashoffset 1s linear, stroke 0.3s ease;
+      }
+      .timer-num {
+        position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+        font-family: 'Fraunces', serif; font-size: 36px; color: var(--card);
+      }
+      .timer-ring-wrap.urgent .timer-num { color: var(--coral); }
+      .timer-ring-wrap.urgent .timer-ring-progress { animation: pulse-ring 1s ease-in-out infinite; }
+      @keyframes pulse-ring { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+      .word-history { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin: 4px 0 12px; }
+      .word-history-chip {
+        font-size: 12px; padding: 4px 10px; border-radius: 999px; background: var(--bg);
+        border: 1px solid var(--line); color: var(--muted); white-space: nowrap;
+      }
+      .word-history-chip.correct { border-color: var(--amber); color: var(--card); }
+      .word-history-chip.skipped { opacity: 0.7; text-decoration: line-through; }
+
+      .game-actions { display: flex; gap: 10px; width: 100%; margin-top: 10px; }
+
+      /* Results */
+      .results-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+      .result-row { display: flex; justify-content: space-between; align-items: center; background: var(--bg); border-radius: 10px; padding: 10px 14px; border: 1px solid transparent; }
+      .result-row strong { font-family: 'Fraunces', serif; }
+      .result-row.winner {
+        border-color: var(--gold-glow);
+        background: linear-gradient(90deg, rgba(244,201,120,0.14), rgba(244,201,120,0.03));
+      }
+      .result-row.winner strong { color: var(--gold-glow); font-size: 18px; }
+      .result-name { display: flex; align-items: center; gap: 8px; }
+      .winner-mark {
+        font-family: 'Manrope'; font-size: 11px; font-weight: 700; color: var(--ink);
+        background: var(--gold-glow); border-radius: 999px; padding: 3px 9px;
+      }
+
+      @media (max-width: 560px) {
+        .rules { grid-template-columns: 1fr; }
+      }
+
+      /* Невеликі й старіші телефони (напр. iPhone SE, ~320-380px) —
+         менші відступи, щоб картка слова та панелі не впирались у краї
+         екрана й не з'їжджали в горизонтальний скрол. */
+      @media (max-width: 380px) {
+        .elias-app { padding: 20px 12px 44px; }
+        .panel { padding: 20px; border-radius: 16px; }
+        .word-card.big { min-width: 0; width: 100%; padding: 28px 22px; }
+        .word-card.big .word-card-word { font-size: 32px; }
+        .timer-ring-wrap, .timer-ring { width: 100px; height: 100px; }
+        .timer-num { font-size: 30px; }
+      }
+
+      /* Телефон в альбомній орієнтації (низька висота) — гра часто йде
+         саме так, поки один тримає телефон горизонтально й пояснює.
+         Прибираємо зайвий верхній відступ, щоб кнопки не з'їжджали за
+         межі видимої області без прокрутки. */
+      @media (max-height: 480px) and (orientation: landscape) {
+        .elias-app { padding-top: 14px; padding-bottom: 14px; }
+        .screen.center { padding-top: 0; }
+        .timer-ring-wrap, .timer-ring { width: 84px; height: 84px; }
+        .timer-num { font-size: 24px; }
+        .word-card.big { padding: 18px 28px; margin: 4px 0; }
+      }
+
+      /* Планшети й ширші екрани — панелі й ігрове поле трохи просторіші,
+         щоб інтерфейс не виглядав загубленим телефонним віконцем
+         посеред великого екрана. */
+      @media (min-width: 700px) {
+        .panel { max-width: 460px; padding: 34px; }
+        .panel.wide { max-width: 640px; }
+        .game-panel .word-card.big { min-width: 300px; padding: 44px 48px; }
+        .game-panel .word-card.big .word-card-word { font-size: 46px; }
+        .timer-ring-wrap, .timer-ring { width: 136px; height: 136px; }
+        .timer-num { font-size: 40px; }
+        .rules { gap: 28px; }
+      }
+
+      @media (min-width: 1024px) {
+        .screen { max-width: 780px; }
+        .panel.wide { max-width: 700px; }
+      }

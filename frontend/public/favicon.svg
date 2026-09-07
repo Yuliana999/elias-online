@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#16302B"/>
+  <g transform="translate(32 33) rotate(-8)">
+    <rect x="-17" y="-15" width="34" height="30" rx="6" fill="#FBF6EC"/>
+    <text x="0" y="8" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif"
+          font-size="28" font-weight="700" fill="#E8A33D">Е</text>
+  </g>
+</svg>
