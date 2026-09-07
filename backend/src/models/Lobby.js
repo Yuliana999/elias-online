@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { TEAM_KEYS, MIN_TEAM_COUNT } from "../config/constants.js";
 
 /*
   Лобі живе недовго (одна ігрова сесія), тому зберігаємо його в Mongo
@@ -24,13 +25,16 @@ const lobbySchema = new mongoose.Schema(
     players: { type: [playerSchema], default: [] },
     teamA: { type: [String], default: [] }, // publicId гравців
     teamB: { type: [String], default: [] },
-    // teamC/teamD існують лише в режимі "team", коли капітан обрав
-    // teamCount 3 або 4 (MIN_TEAM_COUNT/MAX_TEAM_COUNT у constants.js).
-    // "pairs" і "custom" завжди рівно про дві сторони, тому їх не мають.
+    // teamC/teamD існують у режимах "team" і "custom", коли активно 3 або
+    // 4 команди (MIN_TEAM_COUNT/MAX_TEAM_COUNT у constants.js). У "team"
+    // це обирає капітан, у "custom" — росте автоматично (joinLobby).
+    // "pairs" завжди рівно про дві сторони, тому їх не має.
     teamC: { type: [String], default: [] },
     teamD: { type: [String], default: [] },
-    // Скільки команд активно в режимі "team" (2-4). Ігнорується в
-    // "pairs"/"custom" — там завжди 2 (A/B).
+    // Скільки команд активно (2-4). У "team" це обирає капітан
+    // (updateSettings), у "custom" — росте автоматично разом із кількістю
+    // гравців і ніколи не зменшується (joinLobby). Ігнорується в "pairs" —
+    // там завжди 2 (A/B).
     teamCount: { type: Number, enum: [2, 3, 4], default: 2 },
     // Назви команд, які учасники можуть задати самі до старту гри (див.
     // renameTeam у lobby.controller.js). Порожній рядок = дефолтна назва
@@ -57,12 +61,16 @@ const lobbySchema = new mongoose.Schema(
     // Скільки слів має подати кожна команда в режимі "custom" — заміняє
     // вибір жанру, коли команди пишуть слова самі одна одній.
     wordsPerTeam: { type: Number, min: 5, max: 40, default: 5 },
-    // Слова, які кожна команда придумала для СУПЕРНИКА (не для себе):
-    // submittedWords.A — слова від команди 1 (пояснюватиме їх команда 2),
-    // submittedWords.B — слова від команди 2 (пояснюватиме їх команда 1).
+    // Слова, які кожна команда придумала для НАСТУПНОЇ команди по колу
+    // (не для себе): submittedWords.A пояснюватиме команда B, B — команда
+    // C, і так далі по активних командах, замикаючись назад на A (див.
+    // engine.js#createGame). При 2 командах це той самий сценарій
+    // "пара на пару", що й раніше.
     submittedWords: {
       A: { type: [String], default: [] },
       B: { type: [String], default: [] },
+      C: { type: [String], default: [] },
+      D: { type: [String], default: [] },
     },
   },
   { timestamps: true }
@@ -84,7 +92,7 @@ lobbySchema.methods.toPublicJSON = function (forUserId) {
     teamB: this.teamB,
     teamC: this.teamC,
     teamD: this.teamD,
-    teamCount: this.mode === "team" ? this.teamCount : 2,
+    teamCount: this.mode === "team" || this.mode === "custom" ? this.teamCount : 2,
     teamNames: this.teamNames,
     status: this.status,
     roundDuration: this.roundDuration,
@@ -94,12 +102,16 @@ lobbySchema.methods.toPublicJSON = function (forUserId) {
   };
 
   if (this.mode === "custom") {
+    const activeKeys = TEAM_KEYS.slice(0, this.teamCount || MIN_TEAM_COUNT);
+
     base.wordsPerTeam = this.wordsPerTeam;
-    base.wordsStatus = {
-      A: { count: this.submittedWords.A.length, ready: this.submittedWords.A.length >= this.wordsPerTeam },
-      B: { count: this.submittedWords.B.length, ready: this.submittedWords.B.length >= this.wordsPerTeam },
-    };
-    const myTeam = this.teamA.includes(forUserId) ? "A" : this.teamB.includes(forUserId) ? "B" : null;
+    base.wordsStatus = {};
+    for (const key of activeKeys) {
+      const count = this.submittedWords[key]?.length || 0;
+      base.wordsStatus[key] = { count, ready: count >= this.wordsPerTeam };
+    }
+
+    const myTeam = activeKeys.find((key) => (this[`team${key}`] || []).includes(forUserId)) || null;
     base.myTeam = myTeam;
     base.myWords = myTeam ? this.submittedWords[myTeam] : [];
   }
