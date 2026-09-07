@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { api, getAccessToken, setAccessToken } from "./api/http.js";
+import { api, getAccessToken, setAccessToken, setSessionExpiredHandler } from "./api/http.js";
 import { connectSocket, disconnectSocket, getSocket } from "./api/socket.js";
 import { WORD_BANKS } from "./data/wordBanks.js";
 import { shuffle } from "./utils/gameHelpers.js";
@@ -11,6 +11,7 @@ import SoloSetup from "./components/SoloSetup.jsx";
 import Lobby from "./components/Lobby.jsx";
 import Game from "./components/Game.jsx";
 import Results from "./components/Results.jsx";
+import Toast from "./components/Toast.jsx";
 
 const SOLO_COLORS = ["amber", "coral", "blue"];
 
@@ -31,6 +32,10 @@ export default function EliasPrototype() {
   const [game, setGame] = useState(null);
   const [lastResult, setLastResult] = useState(null);
   const [menuNotice, setMenuNotice] = useState(""); // напр. "капітан прибрав тебе з лобі"
+  // Спливаюче вікно НАГОРІ екрана — на відміну від menuNotice (яке видно
+  // лише на екрані меню), це видно на будь-якому екрані: рендериться поза
+  // блоком screen === ... нижче.
+  const [toast, setToast] = useState(null); // { text, kind: "info" | "warning" } | null
 
   const goto = (s) => setScreen(s);
 
@@ -51,6 +56,24 @@ export default function EliasPrototype() {
         goto("landing");
       }
     })();
+  }, []);
+
+  // Реєструємо ОДИН раз: спрацьовує з будь-якого місця (лобі, профіль,
+  // деки тощо), щойно apiRequest виявляє, що сесія більше не жива (401
+  // навіть після спроби refresh). Чистимо локальний стан і показуємо
+  // спливаюче вікно нагорі — а не просто мовчки редиректимо на landing.
+  useEffect(() => {
+    setSessionExpiredHandler(() => {
+      disconnectSocket();
+      setAccessToken(null);
+      setUser(null);
+      setIsGuest(false);
+      setLobby(null);
+      setMode(null);
+      setGame(null);
+      setToast({ text: "Сесію завершено — увійди в акаунт знову.", kind: "warning" });
+      goto("landing");
+    });
   }, []);
 
   const startGame = ({ teams, roundDuration = 60, genre = "general", totalRounds = 3, scoring = "classic" }) => {
@@ -99,6 +122,7 @@ export default function EliasPrototype() {
     setAccessToken(null);
     setUser(null);
     setIsGuest(false);
+    setToast({ text: "Ти вийшов з акаунту.", kind: "info" });
     goto("landing");
   };
 
@@ -250,6 +274,7 @@ export default function EliasPrototype() {
 
   return (
     <div className="elias-app">
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
       {screen === "checking" && <div className="screen center" />}
       {screen === "landing" && (
         <Landing
