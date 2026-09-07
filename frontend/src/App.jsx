@@ -12,6 +12,8 @@ import Lobby from "./components/Lobby.jsx";
 import Game from "./components/Game.jsx";
 import Results from "./components/Results.jsx";
 import Toast from "./components/Toast.jsx";
+import Profile from "./components/Profile.jsx";
+import Friends from "./components/Friends.jsx";
 
 const SOLO_COLORS = ["amber", "coral", "blue"];
 
@@ -36,8 +38,27 @@ export default function EliasPrototype() {
   // лише на екрані меню), це видно на будь-якому екрані: рендериться поза
   // блоком screen === ... нижче.
   const [toast, setToast] = useState(null); // { text, kind: "info" | "warning" } | null
+  // Друзі й вхідні заявки — потрібні і на екрані меню (бейдж дзвіночка в
+  // TopBar), і на окремому екрані "friends", тож тримаємо в App.jsx, а не
+  // всередині Menu/Friends.
+  const [friends, setFriends] = useState([]);
+  const [friendRequests, setFriendRequests] = useState([]);
 
   const goto = (s) => setScreen(s);
+
+  // Підвантажує список друзів + вхідні заявки з бекенду. Викликається одразу
+  // після того, як стає відомий user (відновлення сесії й після логіну) —
+  // помилку тут навмисне ковтаємо: без цього бейдж дзвіночка просто буде
+  // порожнім, це не привід ламати вхід у застосунок.
+  const loadFriends = async () => {
+    try {
+      const { friends: fs, requests } = await api.listFriends();
+      setFriends(fs);
+      setFriendRequests(requests);
+    } catch {
+      // мовчки ігноруємо — спробуємо ще раз при наступному відкритті "Друзів"
+    }
+  };
 
   // При завантаженні сторінки пробуємо відновити сесію: якщо є
   // access-токен (або живий refresh-кукі), питаємо /api/auth/me.
@@ -50,6 +71,7 @@ export default function EliasPrototype() {
       try {
         const { user: me } = await api.me();
         setUser({ id: me.id, name: me.name, stats: me.stats });
+        loadFriends();
         goto("menu");
       } catch {
         setAccessToken(null);
@@ -104,6 +126,7 @@ export default function EliasPrototype() {
       setAccessToken(accessToken);
       setUser({ id: me.id, name: me.name, stats: me.stats });
       setIsGuest(false);
+      loadFriends();
       goto("menu");
     } catch (err) {
       setAuthError(err.message || "Щось пішло не так");
@@ -122,8 +145,70 @@ export default function EliasPrototype() {
     setAccessToken(null);
     setUser(null);
     setIsGuest(false);
+    setFriends([]);
+    setFriendRequests([]);
     setToast({ text: "Ти вийшов з акаунту.", kind: "info" });
     goto("landing");
+  };
+
+  // Сокет для нотифікацій про друзів — на відміну від ефекту лобі нижче
+  // (який тримає з'єднання лише всередині конкретного лобі), це з'єднання
+  // потрібне на будь-якому екрані, поки людина залогинена: заявка в друзі
+  // може прилетіти, поки вона сидить на меню чи профілі. connectSocket()
+  // ідемпотентний — якщо сокет уже підключений (бо ми в лобі), просто
+  // повертає той самий інстанс і додає ще ці два слухачі.
+  useEffect(() => {
+    if (!user) return undefined;
+    const socket = connectSocket();
+
+    const onFriendRequest = ({ request }) => {
+      setFriendRequests((reqs) => [request, ...reqs]);
+      setToast({ text: `${request.from.name} хоче додати тебе в друзі.`, kind: "info" });
+    };
+    const onFriendAccepted = ({ friend }) => {
+      setFriends((fs) => [friend, ...fs]);
+      setToast({ text: `${friend.name} прийняв(-ла) твою заявку в друзі.`, kind: "info" });
+    };
+
+    socket.on("friend:request", onFriendRequest);
+    socket.on("friend:accepted", onFriendAccepted);
+    return () => {
+      socket.off("friend:request", onFriendRequest);
+      socket.off("friend:accepted", onFriendAccepted);
+    };
+  }, [user?.id]);
+
+  // Позначити вхідні заявки переглянутими — викликається щоразу, коли
+  // відкривається дзвіночок сповіщень (TopBar.jsx), але шлемо запит лише
+  // якщо справді є щось непереглянуте.
+  const openBell = () => {
+    if (!friendRequests.some((r) => !r.seen)) return;
+    api.markFriendRequestsSeen().catch(() => {});
+    setFriendRequests((reqs) => reqs.map((r) => ({ ...r, seen: true })));
+  };
+
+  const acceptFriendRequest = async (id) => {
+    const { friend } = await api.acceptFriendRequest(id);
+    setFriendRequests((reqs) => reqs.filter((r) => r.id !== id));
+    if (friend) setFriends((fs) => [friend, ...fs]);
+  };
+
+  const declineFriendRequest = async (id) => {
+    await api.declineFriendRequest(id);
+    setFriendRequests((reqs) => reqs.filter((r) => r.id !== id));
+  };
+
+  const removeFriend = async (friendshipId) => {
+    await api.removeFriend(friendshipId);
+    setFriends((fs) => fs.filter((f) => f.friendshipId !== friendshipId));
+  };
+
+  // Зберегти нове ім'я з екрана профілю — бекенд перевидає accessToken
+  // (нове ім'я потрапляє в його payload), тож оновлюємо і токен, і user.
+  const saveProfile = async (name) => {
+    const { user: updated, accessToken } = await api.updateProfile(name);
+    setAccessToken(accessToken);
+    setUser({ id: updated.id, name: updated.name, stats: updated.stats });
   };
 
   // Підписка на realtime-події поточного лобі: доки лобі відкрите, всі
@@ -303,6 +388,31 @@ export default function EliasPrototype() {
           onLogout={logout}
           notice={menuNotice}
           onDismissNotice={() => setMenuNotice("")}
+          friendRequests={friendRequests}
+          onOpenProfile={() => goto("profile")}
+          onOpenFriends={() => goto("friends")}
+          onOpenBell={openBell}
+          onAcceptFriendRequest={acceptFriendRequest}
+          onDeclineFriendRequest={declineFriendRequest}
+        />
+      )}
+      {screen === "profile" && user && (
+        <Profile
+          user={user}
+          onBack={() => goto("menu")}
+          onSave={saveProfile}
+          onOpenFriends={() => goto("friends")}
+        />
+      )}
+      {screen === "friends" && (
+        <Friends
+          friends={friends}
+          requests={friendRequests}
+          onBack={() => goto("menu")}
+          onAdd={api.sendFriendRequest}
+          onAccept={acceptFriendRequest}
+          onDecline={declineFriendRequest}
+          onRemove={removeFriend}
         />
       )}
       {screen === "soloSetup" && (
