@@ -322,6 +322,8 @@
       .top-bar-avatar.coral { background: var(--coral); color: var(--card); }
       .top-bar-avatar.blue { background: var(--blue); color: var(--card); }
       .top-bar-avatar.mint { background: var(--mint); color: var(--ink); }
+      .top-bar-avatar-photo { padding: 0; overflow: hidden; background: var(--bg-elevated); }
+      .top-bar-avatar-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 
       .bell-dropdown {
         position: absolute; top: 48px; right: 0; width: 260px;
@@ -348,6 +350,26 @@
       .profile-avatar-big.coral { background: var(--coral); color: var(--card); }
       .profile-avatar-big.blue { background: var(--blue); color: var(--card); }
       .profile-avatar-big.mint { background: var(--mint); color: var(--ink); }
+      .profile-avatar-photo { object-fit: cover; background: var(--bg-elevated); }
+
+      /* Обгортка навколо великої аватарки в профілі — потрібна, щоб
+         спозиціювати кнопку-олівець (зміна фото) поверх правого нижнього краю. */
+      .profile-avatar-wrap { position: relative; align-self: center; width: 72px; margin-bottom: 4px; }
+      .profile-avatar-wrap .profile-avatar-big { margin-bottom: 0; }
+      .avatar-edit-btn {
+        position: absolute; bottom: -2px; right: -2px; width: 26px; height: 26px;
+        border-radius: 50%; border: 2px solid var(--card, #fff); background: var(--amber);
+        color: var(--ink); cursor: pointer; display: flex; align-items: center; justify-content: center;
+        font-size: 13px; line-height: 1; padding: 0;
+      }
+      .avatar-edit-btn:hover { filter: brightness(1.05); }
+      .avatar-edit-btn:disabled { opacity: 0.6; cursor: default; }
+      .center-text { text-align: center; }
+      .link-remove-photo {
+        display: block; margin: 0 auto 16px; background: none; border: none;
+        color: var(--muted); font-size: 12px; cursor: pointer; text-decoration: underline;
+      }
+      .link-remove-photo:hover { color: var(--coral); }
 
       .section-title {
         font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
@@ -431,6 +453,7 @@
       .player-avatar.coral { background: var(--coral); color: var(--card); }
       .player-avatar.blue { background: var(--blue); color: var(--card); }
       .player-avatar.mint { background: var(--mint); color: var(--ink); }
+      .player-avatar-photo { object-fit: cover; background: var(--bg-elevated); }
 
       .chip {
         font-family: 'Manrope'; font-size: 12px; font-weight: 700; border-radius: 999px;
