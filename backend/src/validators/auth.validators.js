@@ -16,14 +16,20 @@ const cleanName = z
   .trim()
   .transform((val) => val.replace(/\s+/g, " "));
 
+// Винесено окремо (не лише всередині registerSchema), щоб ті самі правила
+// імені використовував і users.validators.js#updateProfileSchema —
+// перейменування акаунту в профілі мусить підкорятись тим самим обмеженням,
+// що й реєстрація.
+export const nameSchema = cleanName
+  .refine((val) => val.length >= 2, "Ім'я має містити щонайменше 2 символи")
+  .refine((val) => val.length <= 40, "Ім'я задовге (максимум 40 символів)")
+  .refine(
+    (val) => NAME_REGEX.test(val),
+    "Ім'я може містити лише літери, цифри, пробіли, апостроф і дефіс"
+  );
+
 export const registerSchema = z.object({
-  name: cleanName
-    .refine((val) => val.length >= 2, "Ім'я має містити щонайменше 2 символи")
-    .refine((val) => val.length <= 40, "Ім'я задовге (максимум 40 символів)")
-    .refine(
-      (val) => NAME_REGEX.test(val),
-      "Ім'я може містити лише літери, цифри, пробіли, апостроф і дефіс"
-    ),
+  name: nameSchema,
   password: z
     .string({ required_error: "Потрібен пароль" })
     .min(6, "Пароль має містити мінімум 6 символів")
