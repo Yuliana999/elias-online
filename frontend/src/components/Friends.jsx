@@ -50,9 +50,13 @@ export default function Friends({ friends, requests, onBack, onAdd, onAccept, on
             <div className="friends-list">
               {requests.map((r) => (
                 <div className="friend-row" key={r.id}>
-                  <span className={`player-avatar ${avatarHue(r.from.id)}`}>
-                    {r.from.name.charAt(0).toUpperCase()}
-                  </span>
+                  {r.from.avatar ? (
+                    <img className="player-avatar player-avatar-photo" src={r.from.avatar} alt="" />
+                  ) : (
+                    <span className={`player-avatar ${avatarHue(r.from.id)}`}>
+                      {r.from.name.charAt(0).toUpperCase()}
+                    </span>
+                  )}
                   <span className="friend-name">{r.from.name}</span>
                   <button className="btn btn-primary btn-tiny" onClick={() => onAccept(r.id)}>
                     Прийняти
@@ -73,7 +77,11 @@ export default function Friends({ friends, requests, onBack, onAdd, onAccept, on
           <div className="friends-list">
             {friends.map((f) => (
               <div className="friend-row" key={f.friendshipId}>
-                <span className={`player-avatar ${avatarHue(f.id)}`}>{f.name.charAt(0).toUpperCase()}</span>
+                {f.avatar ? (
+                  <img className="player-avatar player-avatar-photo" src={f.avatar} alt="" />
+                ) : (
+                  <span className={`player-avatar ${avatarHue(f.id)}`}>{f.name.charAt(0).toUpperCase()}</span>
+                )}
                 <span className="friend-name">{f.name}</span>
                 <span className="friend-meta">
                   {f.stats?.gamesPlayed ?? 0} ігор · {f.stats?.accuracy ?? 0}%
