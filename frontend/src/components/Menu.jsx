@@ -1,4 +1,5 @@
 import { useState } from "react";
+import TopBar from "./TopBar.jsx";
 
 function ModeCard({ title, desc, onClick }) {
   return (
@@ -9,7 +10,20 @@ function ModeCard({ title, desc, onClick }) {
   );
 }
 
-export default function Menu({ user, onChoose, onJoin, onLogout, notice, onDismissNotice }) {
+export default function Menu({
+  user,
+  onChoose,
+  onJoin,
+  onLogout,
+  notice,
+  onDismissNotice,
+  friendRequests,
+  onOpenProfile,
+  onOpenFriends,
+  onOpenBell,
+  onAcceptFriendRequest,
+  onDeclineFriendRequest,
+}) {
   const [copied, setCopied] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState("");
@@ -30,7 +44,17 @@ export default function Menu({ user, onChoose, onJoin, onLogout, notice, onDismi
   };
 
   return (
-    <div className="screen center">
+    <>
+      <TopBar
+        user={user}
+        requests={friendRequests}
+        onOpenProfile={onOpenProfile}
+        onOpenFriends={onOpenFriends}
+        onOpenBell={onOpenBell}
+        onAccept={onAcceptFriendRequest}
+        onDecline={onDeclineFriendRequest}
+      />
+      <div className="screen center">
       <div className="panel wide">
         {notice && (
           <div className="notice">
@@ -107,6 +131,7 @@ export default function Menu({ user, onChoose, onJoin, onLogout, notice, onDismi
 
         <button className="link-back" onClick={onLogout}>Вийти з акаунту</button>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
