@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { GENRES, ROUND_DURATIONS, SCORING_MODES } from "../data/wordBanks.js";
-import { MAX_TEAM_SIZE, MAX_TEAM_LOBBY_SIZE, MIN_TEAM_COUNT, MAX_TEAM_COUNT, TEAM_KEYS, teamLobbySize } from "../data/limits.js";
+import { MAX_TEAM_SIZE, MIN_TEAM_COUNT, MAX_TEAM_COUNT, TEAM_KEYS, teamLobbySize } from "../data/limits.js";
 import { avatarHue } from "../utils/gameHelpers.js";
 
 const ROUNDS_OPTIONS = [1, 2, 3, 4, 5, 6];
@@ -249,9 +249,11 @@ export default function Lobby({
     );
   }
 
-  // Скільки команд активно в цьому лобі: "team" дозволяє капітану обрати
-  // 2-4 (lobby.teamCount), "pairs"/"custom" завжди рівно про дві сторони.
-  const teamCount = mode === "team" ? lobby.teamCount || MIN_TEAM_COUNT : 2;
+  // Скільки команд активно в цьому лобі: "pairs" завжди рівно про дві
+  // сторони. "team" дозволяє капітану обрати 2-4 (lobby.teamCount), а
+  // "custom" тепер теж бере це з lobby.teamCount — там воно росте само
+  // разом із кількістю гравців (бекенд, joinLobby), а не обирається руками.
+  const teamCount = mode === "team" || isCustom ? lobby.teamCount || MIN_TEAM_COUNT : 2;
   const activeTeamKeys = TEAM_KEYS.slice(0, teamCount);
   const teamArray = (key) => lobby[`team${key}`] || [];
   const teamOf = (id) => activeTeamKeys.find((key) => teamArray(key).includes(id)) || null;
@@ -333,7 +335,7 @@ export default function Lobby({
     );
   }
 
-  const wordsReady = !isCustom || (lobby.wordsStatus?.A?.ready && lobby.wordsStatus?.B?.ready);
+  const wordsReady = !isCustom || activeTeamKeys.every((key) => lobby.wordsStatus?.[key]?.ready);
   const canStart = (mode === "pairs"
     ? lobby.players.length >= 1
     // Кожна активна команда має мати хоча б одного гравця — інакше хід
@@ -510,15 +512,20 @@ export default function Lobby({
 
         <p className="hint">
           Друзі приєднуються самі: заходять у свій акаунт і вводять код лобі в меню.
-          {mode === "team" || isCustom ? ` Лобі вміщує до ${mode === "team" ? teamLobbySize(teamCount) : MAX_TEAM_LOBBY_SIZE} гравців (${lobby.players.length}/${mode === "team" ? teamLobbySize(teamCount) : MAX_TEAM_LOBBY_SIZE}).` : ""}
+          {mode === "team" || isCustom
+            ? ` Лобі вміщує до ${teamLobbySize(teamCount)} гравців (${lobby.players.length}/${teamLobbySize(teamCount)}) при ${teamCount} ${teamCount === 1 ? "команді" : "командах"}.`
+            : ""}
+          {isCustom && teamCount < MAX_TEAM_COUNT
+            ? ` ${teamCount * MAX_TEAM_SIZE + 1}-й гравець відкриє наступну команду.`
+            : ""}
         </p>
 
         {mode === "team" || isCustom ? (
           // Групуємо за командою, щоб усім (не лише капітану) було видно
           // хто з ким грає в парі й проти кого — раніше це бачив тільки
-          // капітан по підсвіченій кнопці біля кожного гравця. У "team"
-          // групи динамічні (2-4, за teamGroups вище), у "custom" завжди
-          // рівно дві.
+          // капітан по підсвіченій кнопці біля кожного гравця. Групи
+          // динамічні (2-4, за teamGroups вище) в обох режимах — у "team"
+          // кількість обирає капітан, у "custom" вона росте сама.
           <div className="team-groups">
             {teamGroups.map((group) => (
               <div className="team-group" key={group.key}>
@@ -617,10 +624,12 @@ export default function Lobby({
         )}
         {isCustom && (
           <p className="hint">
-            Команда 1 подала {lobby.wordsStatus?.A?.count || 0}/{wordsPerTeamLabel} слів
-            {lobby.wordsStatus?.A?.ready ? " ✅" : ""} · Команда 2 подала{" "}
-            {lobby.wordsStatus?.B?.count || 0}/{wordsPerTeamLabel} слів
-            {lobby.wordsStatus?.B?.ready ? " ✅" : ""}
+            {activeTeamKeys
+              .map((key) => {
+                const status = lobby.wordsStatus?.[key];
+                return `${teamLabel(key)} подала ${status?.count || 0}/${wordsPerTeamLabel} слів${status?.ready ? " ✅" : ""}`;
+              })
+              .join(" · ")}
           </p>
         )}
 
