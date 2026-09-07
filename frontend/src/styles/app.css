@@ -9,6 +9,7 @@
         --amber: #E8A33D;
         --coral: #E0654A;
         --blue: #4E8DC4;
+        --mint: #5FBF8F;
         --muted: #9FB8AE;
         --line: rgba(251,246,236,0.14);
         --gold-glow: #F4C978;
@@ -332,6 +333,8 @@
       .team-group-count { color: var(--muted); font-weight: 600; }
       .team-group-title.chip-coral { border-left-color: var(--coral); }
       .team-group-title.chip-blue { border-left-color: var(--blue); }
+      .team-group-title.chip-amber { border-left-color: var(--amber); }
+      .team-group-title.chip-mint { border-left-color: var(--mint); }
       .team-group .players-list { margin: 0; }
       .team-group-empty { margin: 0; padding: 8px 14px; }
 
@@ -343,6 +346,7 @@
       .player-avatar.amber { background: var(--amber); }
       .player-avatar.coral { background: var(--coral); color: var(--card); }
       .player-avatar.blue { background: var(--blue); color: var(--card); }
+      .player-avatar.mint { background: var(--mint); color: var(--ink); }
 
       .chip {
         font-family: 'Manrope'; font-size: 12px; font-weight: 700; border-radius: 999px;
@@ -352,6 +356,7 @@
       .chip-coral.active { background: var(--coral); color: var(--card); border-color: var(--coral); }
       .chip-blue.active { background: var(--blue); color: var(--card); border-color: var(--blue); }
       .chip-amber.active { background: var(--amber); color: var(--ink); border-color: var(--amber); }
+      .chip-mint.active { background: var(--mint); color: var(--ink); border-color: var(--mint); }
       .chip:disabled { cursor: not-allowed; opacity: 0.4; }
       .chip:disabled.active { opacity: 0.7; }
 
@@ -380,6 +385,7 @@
       .score-pill.coral.current { border-color: var(--coral); }
       .score-pill.blue.current { border-color: var(--blue); }
       .score-pill.amber.current { border-color: var(--amber); }
+      .score-pill.mint.current { border-color: var(--mint); }
 
       .round-label { font-size: 13px; margin-bottom: 6px; }
 
