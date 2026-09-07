@@ -19,7 +19,7 @@ const lobbySchema = new mongoose.Schema(
   {
     code: { type: String, required: true, unique: true, index: true },
     // "custom" — режим "Підставний суддя": команди пишуть слова одна
-    // одній замість вибору жанру (див. wordsPerTeam/submittedWords нижче).
+    // одній замість вибору жанру (див. wordsPerTeam/submittedWordsByPlayer нижче).
     mode: { type: String, enum: ["pairs", "team", "custom"], required: true },
     captainId: { type: String, required: true },
     players: { type: [playerSchema], default: [] },
@@ -61,20 +61,37 @@ const lobbySchema = new mongoose.Schema(
     // Скільки слів має подати кожна команда в режимі "custom" — заміняє
     // вибір жанру, коли команди пишуть слова самі одна одній.
     wordsPerTeam: { type: Number, min: 5, max: 40, default: 5 },
-    // Слова, які кожна команда придумала для НАСТУПНОЇ команди по колу
-    // (не для себе): submittedWords.A пояснюватиме команда B, B — команда
-    // C, і так далі по активних командах, замикаючись назад на A (див.
-    // engine.js#createGame). При 2 командах це той самий сценарій
-    // "пара на пару", що й раніше.
-    submittedWords: {
-      A: { type: [String], default: [] },
-      B: { type: [String], default: [] },
-      C: { type: [String], default: [] },
-      D: { type: [String], default: [] },
-    },
+    // Слова, які написав КОЖЕН гравець окремо (ключ — publicId гравця).
+    // У команді може бути кілька гравців (до MAX_TEAM_SIZE) — раніше
+    // останній, хто натиснув "Зберегти", перезаписував слова попереднього
+    // тіммейта; тепер кожен пише свій список, і wordsForTeam нижче об'єднує
+    // всіх учасників команди в один спільний пул для суперника.
+    submittedWordsByPlayer: { type: Map, of: [String], default: () => new Map() },
   },
   { timestamps: true }
 );
+
+// Слова, які пояснюватиме команда `key` — зібрані з УСІХ гравців, хто
+// зараз у цій команді (кожен пише свій список окремо в submitWords, вони
+// не перезаписують один одного, а об'єднуються тут в один спільний пул
+// для суперника). Дублікати між тіммейтами прибираємо (без урахування
+// регістру), щоб те саме слово, назване двічі, не з'явилось у грі двічі.
+lobbySchema.methods.wordsForTeam = function (key) {
+  const ids = this[`team${key}`] || [];
+  const words = [];
+  const seen = new Set();
+  for (const id of ids) {
+    const own = this.submittedWordsByPlayer?.get?.(id) || [];
+    for (const w of own) {
+      const norm = w.trim();
+      const lower = norm.toLowerCase();
+      if (!norm || seen.has(lower)) continue;
+      seen.add(lower);
+      words.push(norm);
+    }
+  }
+  return words;
+};
 
 // forUserId — публічний ID гравця, для якого формуємо відповідь. У режимі
 // "custom" це важливо: гравець бачить лише те, скільки слів подала кожна
@@ -107,13 +124,15 @@ lobbySchema.methods.toPublicJSON = function (forUserId) {
     base.wordsPerTeam = this.wordsPerTeam;
     base.wordsStatus = {};
     for (const key of activeKeys) {
-      const count = this.submittedWords[key]?.length || 0;
+      const count = this.wordsForTeam(key).length;
       base.wordsStatus[key] = { count, ready: count >= this.wordsPerTeam };
     }
 
     const myTeam = activeKeys.find((key) => (this[`team${key}`] || []).includes(forUserId)) || null;
     base.myTeam = myTeam;
-    base.myWords = myTeam ? this.submittedWords[myTeam] : [];
+    // Лише ВЛАСНИЙ внесок цього гравця (не весь пул команди) — форма
+    // подачі слів (WordsSubmitForm) редагує список кожного окремо.
+    base.myWords = this.submittedWordsByPlayer?.get?.(forUserId) || [];
   }
 
   return base;
