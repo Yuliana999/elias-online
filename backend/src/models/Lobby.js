@@ -24,12 +24,22 @@ const lobbySchema = new mongoose.Schema(
     players: { type: [playerSchema], default: [] },
     teamA: { type: [String], default: [] }, // publicId гравців
     teamB: { type: [String], default: [] },
+    // teamC/teamD існують лише в режимі "team", коли капітан обрав
+    // teamCount 3 або 4 (MIN_TEAM_COUNT/MAX_TEAM_COUNT у constants.js).
+    // "pairs" і "custom" завжди рівно про дві сторони, тому їх не мають.
+    teamC: { type: [String], default: [] },
+    teamD: { type: [String], default: [] },
+    // Скільки команд активно в режимі "team" (2-4). Ігнорується в
+    // "pairs"/"custom" — там завжди 2 (A/B).
+    teamCount: { type: Number, enum: [2, 3, 4], default: 2 },
     // Назви команд, які учасники можуть задати самі до старту гри (див.
     // renameTeam у lobby.controller.js). Порожній рядок = дефолтна назва
-    // ("Команда 1"/"Команда 2"), яку підставляє buildTeams в engine.js.
+    // ("Команда 1"/"Команда 2"/...), яку підставляє buildTeams в engine.js.
     teamNames: {
       A: { type: String, trim: true, maxlength: 24, default: "" },
       B: { type: String, trim: true, maxlength: 24, default: "" },
+      C: { type: String, trim: true, maxlength: 24, default: "" },
+      D: { type: String, trim: true, maxlength: 24, default: "" },
     },
     status: { type: String, enum: ["waiting", "started"], default: "waiting" },
     roundDuration: { type: Number, enum: [30, 45, 60, 90, 120], default: 60 },
@@ -72,6 +82,9 @@ lobbySchema.methods.toPublicJSON = function (forUserId) {
     players: this.players,
     teamA: this.teamA,
     teamB: this.teamB,
+    teamC: this.teamC,
+    teamD: this.teamD,
+    teamCount: this.mode === "team" ? this.teamCount : 2,
     teamNames: this.teamNames,
     status: this.status,
     roundDuration: this.roundDuration,
