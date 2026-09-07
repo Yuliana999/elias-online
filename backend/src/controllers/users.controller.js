@@ -40,6 +40,36 @@ export async function updateProfile(req, res) {
   res.json({ user: user.toPublicJSON(), accessToken });
 }
 
+// Завантаження/зміна аватарки (екран Профіль). Валідатор (updateAvatarSchema)
+// вже перевірив формат і жорстку верхню межу розміру рядка — тут лише
+// зберігаємо. На відміну від updateProfile, новий accessToken не потрібен:
+// аватарка не потрапляє в JWT-payload (лише id і ім'я — tokens.js), тож
+// фронтенд просто оновлює user.avatar у своєму стані.
+export async function updateAvatar(req, res) {
+  const { avatar } = req.body;
+
+  const user = await User.findOneAndUpdate(
+    { publicId: req.userId },
+    { avatar },
+    { new: true }
+  );
+  if (!user) return res.status(404).json({ error: "Користувача не знайдено" });
+
+  res.json({ user: user.toPublicJSON() });
+}
+
+// Прибрати аватарку — повертаємось до кольорового кружечка з літерою імені.
+export async function removeAvatar(req, res) {
+  const user = await User.findOneAndUpdate(
+    { publicId: req.userId },
+    { avatar: null },
+    { new: true }
+  );
+  if (!user) return res.status(404).json({ error: "Користувача не знайдено" });
+
+  res.json({ user: user.toPublicJSON() });
+}
+
 // Одиночна гра (SoloSetup/Game.jsx) — повністю локальна, без лобі й без
 // сокетів, тож на відміну від онлайн-партій (де рахунок веде сервер і
 // сам оновлює stats — sockets/index.js#recordGameStats) статистику сюди
