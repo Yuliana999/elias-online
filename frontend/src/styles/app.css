@@ -21,16 +21,11 @@
           var(--bg);
         color: var(--card);
         font-family: 'Manrope', sans-serif;
-        /* 100vh на телефонах "стрибає", коли з'являється/ховається адресний
-           рядок браузера — dvh рахує реальну видиму висоту. vh лишаємо як
-           фолбек для старих браузерів, що dvh ще не підтримують. */
         min-height: 100vh;
         min-height: 100dvh;
         width: 100%;
         box-sizing: border-box;
         padding: 32px 20px 60px;
-        /* На айфонах з "чолкою"/скругленими кутами екрана в альбомній
-           орієнтації контент інакше заходить під вирізи. */
         padding-left: max(20px, env(safe-area-inset-left));
         padding-right: max(20px, env(safe-area-inset-right));
         padding-bottom: max(60px, env(safe-area-inset-bottom) + 24px);
@@ -174,6 +169,7 @@
       .btn-ghost { background: transparent; color: var(--card); border: 1px solid var(--line); }
       .btn-block { width: 100%; margin-top: 6px; }
       .btn-small { padding: 8px 14px; font-size: 13px; }
+      .btn-tiny { padding: 6px 10px; font-size: 12px; }
       .btn-skip { background: var(--bg-elevated); color: var(--card); border: 1px solid var(--line); flex: 1; }
       .btn-correct { background: var(--coral); color: var(--card); flex: 1.4; }
 
@@ -296,6 +292,74 @@
       }
       .stats-cell strong { font-family: 'Fraunces', serif; font-size: 20px; color: var(--amber); }
       .stats-cell span { font-size: 12px; color: var(--muted); }
+
+      /* TopBar (дзвіночок сповіщень про друзів + аватарка-кнопка профілю) —
+         фіксована в правому верхньому куті екрана меню (Menu.jsx#TopBar). */
+      .top-bar {
+        position: fixed;
+        top: max(16px, env(safe-area-inset-top));
+        right: max(16px, env(safe-area-inset-right));
+        display: flex; align-items: center; gap: 10px; z-index: 500;
+      }
+      .top-bar-bell-wrap { position: relative; }
+      .top-bar-icon-btn {
+        background: var(--bg-elevated); border: 1px solid var(--line); color: var(--card);
+        width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+      }
+      .top-bar-icon-btn:hover { border-color: var(--amber); }
+      .top-bar-badge {
+        position: absolute; top: -4px; right: -4px; background: var(--coral); color: var(--card);
+        font-size: 10px; font-weight: 700; border-radius: 999px; min-width: 16px; height: 16px;
+        display: flex; align-items: center; justify-content: center; padding: 0 4px; line-height: 1;
+      }
+      .top-bar-avatar {
+        width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Fraunces', serif; font-size: 16px; font-weight: 600; color: var(--ink);
+      }
+      .top-bar-avatar.amber { background: var(--amber); }
+      .top-bar-avatar.coral { background: var(--coral); color: var(--card); }
+      .top-bar-avatar.blue { background: var(--blue); color: var(--card); }
+      .top-bar-avatar.mint { background: var(--mint); color: var(--ink); }
+
+      .bell-dropdown {
+        position: absolute; top: 48px; right: 0; width: 260px;
+        background: var(--bg-elevated); border: 1px solid var(--line); border-radius: 14px;
+        padding: 14px; box-shadow: 0 18px 40px var(--shadow-deep); z-index: 10;
+      }
+      .bell-dropdown-title { font-family: 'Fraunces', serif; font-size: 14px; margin: 0 0 10px; color: var(--card); }
+      .bell-empty { font-size: 13px; margin: 0; }
+      .bell-request-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+      .bell-request-name { flex: 1; font-size: 13px; }
+      .bell-dropdown-link {
+        background: none; border: none; color: var(--muted); font-size: 12px; cursor: pointer;
+        padding: 6px 0 0; width: 100%; text-align: center;
+      }
+      .bell-dropdown-link:hover { color: var(--amber); }
+
+      /* Профіль гравця (Profile.jsx): велика аватарка + сітка статистики 2x2 */
+      .profile-avatar-big {
+        width: 72px; height: 72px; border-radius: 50%; align-self: center;
+        display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
+        font-family: 'Fraunces', serif; font-size: 28px; font-weight: 600; color: var(--ink);
+      }
+      .profile-avatar-big.amber { background: var(--amber); }
+      .profile-avatar-big.coral { background: var(--coral); color: var(--card); }
+      .profile-avatar-big.blue { background: var(--blue); color: var(--card); }
+      .profile-avatar-big.mint { background: var(--mint); color: var(--ink); }
+
+      .section-title {
+        font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+        color: var(--muted); font-weight: 600; margin: 4px 0 10px;
+      }
+      .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 22px; }
+
+      /* Друзі (Friends.jsx) */
+      .friends-list { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 20px; }
+      .friend-row { display: flex; align-items: center; gap: 10px; background: var(--bg); border-radius: 10px; padding: 10px 14px; }
+      .friend-name { flex: 1; font-weight: 600; }
+      .friend-meta { font-size: 12px; color: var(--muted); white-space: nowrap; }
 
       /* Рейтинг лідерів лобі */
       .leaderboard { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 20px; }
@@ -460,9 +524,6 @@
         .rules { grid-template-columns: 1fr; }
       }
 
-      /* Невеликі й старіші телефони (напр. iPhone SE, ~320-380px) —
-         менші відступи, щоб картка слова та панелі не впирались у краї
-         екрана й не з'їжджали в горизонтальний скрол. */
       @media (max-width: 380px) {
         .elias-app { padding: 20px 12px 44px; }
         .panel { padding: 20px; border-radius: 16px; }
@@ -472,10 +533,6 @@
         .timer-num { font-size: 30px; }
       }
 
-      /* Телефон в альбомній орієнтації (низька висота) — гра часто йде
-         саме так, поки один тримає телефон горизонтально й пояснює.
-         Прибираємо зайвий верхній відступ, щоб кнопки не з'їжджали за
-         межі видимої області без прокрутки. */
       @media (max-height: 480px) and (orientation: landscape) {
         .elias-app { padding-top: 14px; padding-bottom: 14px; }
         .screen.center { padding-top: 0; }
@@ -484,9 +541,6 @@
         .word-card.big { padding: 18px 28px; margin: 4px 0; }
       }
 
-      /* Планшети й ширші екрани — панелі й ігрове поле трохи просторіші,
-         щоб інтерфейс не виглядав загубленим телефонним віконцем
-         посеред великого екрана. */
       @media (min-width: 700px) {
         .panel { max-width: 460px; padding: 34px; }
         .panel.wide { max-width: 640px; }
