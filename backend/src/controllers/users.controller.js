@@ -5,7 +5,7 @@ import { signAccessToken } from "../utils/tokens.js";
 // /api/auth/me (User.toPublicJSON вже містить stats), лише для чужого
 // акаунту. Вимагає авторизації (щоб не роздавати профілі анонімно), але
 // не перевіряє, що це "свій" профіль — так само, як publicId і так можна
-// побачити в лобі поруч з іменем гравця.
+// побачити в лобі поруч з іменем  гравця.
 export async function getProfile(req, res) {
   const user = await User.findOne({ publicId: req.params.publicId });
   if (!user) return res.status(404).json({ error: "Користувача не знайдено" });
