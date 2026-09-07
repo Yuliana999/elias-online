@@ -137,8 +137,11 @@ function DeckManager({ words, onListDecks, onSaveDeck, onDeleteDeck, onLoad }) {
 }
 
 // Форма подачі слів для режиму "custom" ("Підставний суддя"): гравець
-// пише слова, які пояснюватиме КОМАНДА-СУПЕРНИК, тому власний список
-// суперника тут навмисне не показуємо — лише те, що подала моя команда.
+// пише СВОЇ слова, які пояснюватиме КОМАНДА-СУПЕРНИК; власний список
+// суперника тут навмисне не показуємо. Якщо в команді два гравці, слова
+// обох ОБ'ЄДНУЮТЬСЯ в один спільний пул — тому wordsPerTeam це ціль на
+// всю команду разом, а не персональна квота (командний прогрес видно
+// нижче формою, у підказці "Команда N подала X/Y слів").
 function WordsSubmitForm({ myWords, wordsPerTeam, onSubmit, onListDecks, onSaveDeck, onDeleteDeck }) {
   const [text, setText] = useState(myWords.join("\n"));
   const [busy, setBusy] = useState(false);
@@ -161,12 +164,12 @@ function WordsSubmitForm({ myWords, wordsPerTeam, onSubmit, onListDecks, onSaveD
 
   return (
     <div className="settings-block">
-      <span className="settings-label">
-        Твої слова для суперника ({uniqueCount}/{wordsPerTeam})
-      </span>
+      <span className="settings-label">Твої слова для суперника ({uniqueCount})</span>
       <p className="hint">
         Кожне слово — з нового рядка (або через кому). Це побачить лише твоя
-        команда — суперник дізнається слово лише коли настане його хід.
+        команда — суперник дізнається слово лише коли настане його хід. Якщо
+        вас у команді двоє, слова обох додаються разом до спільної цілі —
+        {" "}{wordsPerTeam} слів на команду.
       </p>
       <textarea
         className="words-textarea"
