@@ -57,6 +57,19 @@ export function emitLobbyKicked(io, code, playerId) {
   }
 }
 
+// Особиста кімната гравця (user:<publicId>) — на відміну від lobby:<code>,
+// сокет приєднується до неї автоматично при підключенні (нижче, в
+// attachSockets), а не по явній події. Потрібна для нотифікацій, які не
+// прив'язані до конкретного лобі (напр. заявки в друзі) — вони мають
+// доходити незалежно від того, в якому лобі (чи поза ним) зараз гравець.
+export function emitFriendRequest(io, toPublicId, request) {
+  io.to(`user:${toPublicId}`).emit("friend:request", { request });
+}
+
+export function emitFriendAccepted(io, toPublicId, friend) {
+  io.to(`user:${toPublicId}`).emit("friend:accepted", { friend });
+}
+
 // На відміну від lobby:update, стан гри шлють не однаковим для всіх —
 // кожен сокет отримує currentWord лише якщо його гравець зараз у
 // команді, чий хід (див. publicGameFor). Інакше суперник міг би просто
@@ -141,6 +154,10 @@ export function attachSockets(httpServer, clientOrigin) {
 
   io.on("connection", (socket) => {
     console.log(`[socket] підключився ${socket.userName} (${socket.userId})`);
+
+    // Особиста кімната — сюди летять нотифікації про друзів (emitFriendRequest/
+    // emitFriendAccepted вище), не прив'язані до конкретного лобі.
+    socket.join(`user:${socket.userId}`);
 
     // Поточне лобі цього сокета (якщо є) — щоб коректно вийти з кімнати
     // і сповістити інших при "lobby:leave" чи розриві з'єднання.
