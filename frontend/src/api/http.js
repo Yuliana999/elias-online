@@ -151,4 +151,11 @@ export const api = {
   acceptFriendRequest: (id) => apiRequest(`/api/friends/requests/${id}/accept`, { method: "POST" }),
   declineFriendRequest: (id) => apiRequest(`/api/friends/requests/${id}`, { method: "DELETE" }),
   removeFriend: (friendshipId) => apiRequest(`/api/friends/${friendshipId}`, { method: "DELETE" }),
+
+  // Особисті повідомлення (чат із друзями — Chat.jsx). listChatMessages
+  // заразом позначає вхідні повідомлення цього треда прочитаними на бекенді.
+  listChatThreads: () => apiRequest("/api/messages"),
+  listChatMessages: (friendId) => apiRequest(`/api/messages/${friendId}`),
+  sendChatMessage: (friendId, text) =>
+    apiRequest(`/api/messages/${friendId}`, { method: "POST", body: { text } }),
 };
