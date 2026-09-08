@@ -403,6 +403,7 @@ export default function EliasPrototype() {
           onLogout={logout}
           notice={menuNotice}
           onDismissNotice={() => setMenuNotice("")}
+          friends={friends}
           friendRequests={friendRequests}
           onOpenProfile={() => goto("profile")}
           onOpenFriends={() => goto("friends")}
