@@ -13,6 +13,7 @@ import lobbyRoutes from "./routes/lobby.routes.js";
 import decksRoutes from "./routes/decks.routes.js";
 import usersRoutes from "./routes/users.routes.js";
 import friendsRoutes from "./routes/friends.routes.js";
+import messagesRoutes from "./routes/messages.routes.js";
 
 const PORT = process.env.PORT || 4000;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
@@ -36,6 +37,7 @@ app.use("/api/lobby", lobbyRoutes);
 app.use("/api/decks", decksRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/friends", friendsRoutes);
+app.use("/api/messages", messagesRoutes);
 
 // Загальний обробник помилок — щоб async-контролери не валили сервер мовчки.
 // Ловить у т.ч. помилки з async-хендлерів завдяки asyncHandler у роутах.
