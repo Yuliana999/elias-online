@@ -1,5 +1,6 @@
 import { useState } from "react";
 import TopBar from "./TopBar.jsx";
+import Chat from "./Chat.jsx";
 
 function ModeCard({ title, desc, onClick }) {
   return (
@@ -17,6 +18,7 @@ export default function Menu({
   onLogout,
   notice,
   onDismissNotice,
+  friends,
   friendRequests,
   onOpenProfile,
   onOpenFriends,
@@ -54,6 +56,7 @@ export default function Menu({
         onAccept={onAcceptFriendRequest}
         onDecline={onDeclineFriendRequest}
       />
+      <Chat user={user} friends={friends} />
       <div className="screen center">
       <div className="panel wide">
         {notice && (
