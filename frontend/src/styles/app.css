@@ -304,19 +304,20 @@
       .top-bar-bell-wrap { position: relative; }
       .top-bar-icon-btn {
         background: var(--bg-elevated); border: 1px solid var(--line); color: var(--card);
-        width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+        width: 48px; height: 48px; border-radius: 50%; cursor: pointer;
         display: flex; align-items: center; justify-content: center;
       }
       .top-bar-icon-btn:hover { border-color: var(--amber); }
+      .top-bar-icon-btn svg { width: 22px; height: 22px; }
       .top-bar-badge {
         position: absolute; top: -4px; right: -4px; background: var(--coral); color: var(--card);
-        font-size: 10px; font-weight: 700; border-radius: 999px; min-width: 16px; height: 16px;
-        display: flex; align-items: center; justify-content: center; padding: 0 4px; line-height: 1;
+        font-size: 11px; font-weight: 700; border-radius: 999px; min-width: 18px; height: 18px;
+        display: flex; align-items: center; justify-content: center; padding: 0 5px; line-height: 1;
       }
       .top-bar-avatar {
-        width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer; flex-shrink: 0;
+        width: 48px; height: 48px; border-radius: 50%; border: none; cursor: pointer; flex-shrink: 0;
         display: flex; align-items: center; justify-content: center;
-        font-family: 'Fraunces', serif; font-size: 16px; font-weight: 600; color: var(--ink);
+        font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; color: var(--ink);
       }
       .top-bar-avatar.amber { background: var(--amber); }
       .top-bar-avatar.coral { background: var(--coral); color: var(--card); }
