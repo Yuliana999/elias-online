@@ -326,6 +326,65 @@
       .top-bar-avatar-photo { padding: 0; overflow: hidden; background: var(--bg-elevated); }
       .top-bar-avatar-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 
+      /* Chat (чат із друзями) — фіксований у нижньому правому куті екрана
+         меню, симетрично до TopBar угорі (Menu.jsx#Chat). Кнопка навмисне
+         перевикористовує .top-bar-icon-btn — той самий розмір і стиль,
+         що й дзвіночок/аватарка нагорі. */
+      .chat-widget-wrap {
+        position: fixed;
+        bottom: max(16px, env(safe-area-inset-bottom));
+        right: max(16px, env(safe-area-inset-right));
+        z-index: 500;
+        display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+      }
+      .chat-toggle-wrap { position: relative; }
+      .chat-toggle-btn svg { width: 20px; height: 20px; }
+
+      .chat-panel {
+        width: 320px; max-width: calc(100vw - 32px);
+        height: 440px; max-height: calc(100vh - 120px);
+        background: var(--bg-elevated); border: 1px solid var(--line); border-radius: 16px;
+        display: flex; flex-direction: column; overflow: hidden;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      }
+      .chat-panel-title {
+        padding: 14px 16px; font-weight: 700; border-bottom: 1px solid var(--line); flex-shrink: 0;
+      }
+      .chat-panel-title-conv { display: flex; align-items: center; gap: 10px; }
+      .chat-panel-title-conv .player-avatar { width: 28px; height: 28px; font-size: 13px; flex-shrink: 0; }
+      .chat-back-btn {
+        background: none; border: none; color: inherit; font-size: 18px; cursor: pointer; padding: 0; line-height: 1;
+      }
+      .chat-thread-list { flex: 1; overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 2px; }
+      .chat-thread-row {
+        display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px;
+        background: none; border: none; cursor: pointer; text-align: left; width: 100%; color: inherit;
+      }
+      .chat-thread-row:hover { background: var(--bg); }
+      .chat-thread-row .player-avatar { width: 36px; height: 36px; font-size: 14px; flex-shrink: 0; }
+      .chat-thread-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+      .chat-thread-name { font-weight: 600; font-size: 14px; }
+      .chat-thread-preview {
+        font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .chat-thread-preview-muted { font-style: italic; }
+      .chat-thread-row .top-bar-badge { position: static; margin-left: auto; flex-shrink: 0; }
+
+      .chat-messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+      .chat-bubble {
+        max-width: 80%; padding: 8px 12px; border-radius: 14px; font-size: 14px; line-height: 1.35; word-break: break-word;
+      }
+      .chat-bubble-mine {
+        align-self: flex-end; background: var(--amber); color: var(--ink); border-bottom-right-radius: 4px;
+      }
+      .chat-bubble-theirs { align-self: flex-start; background: var(--bg); border-bottom-left-radius: 4px; }
+
+      .chat-input-row { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); flex-shrink: 0; }
+      .chat-input-row input {
+        flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+        padding: 8px 10px; color: inherit; font: inherit;
+      }
+
       .bell-dropdown {
         position: absolute; top: 48px; right: 0; width: 260px;
         background: var(--bg-elevated); border: 1px solid var(--line); border-radius: 14px;
