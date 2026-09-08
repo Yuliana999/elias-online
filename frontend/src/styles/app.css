@@ -218,6 +218,7 @@
       .words-textarea:focus { outline: 2px solid var(--amber); outline-offset: 2px; }
 
       .hint { font-size: 13px; margin-top: 10px; }
+      .words-saved-hint { color: var(--mint); font-weight: 600; margin-top: 8px; }
       .error { color: var(--coral); font-size: 13px; margin: -8px 0 10px; }
 
       /* Notice banner (напр. "капітан прибрав тебе з лобі") */
