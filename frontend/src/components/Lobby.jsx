@@ -143,18 +143,27 @@ function DeckManager({ words, onListDecks, onSaveDeck, onDeleteDeck, onLoad }) {
 // всю команду разом, а не персональна квота (командний прогрес видно
 // нижче формою, у підказці "Команда N подала X/Y слів").
 function WordsSubmitForm({ myWords, wordsPerTeam, onSubmit, onListDecks, onSaveDeck, onDeleteDeck }) {
-  const [text, setText] = useState(myWords.join("\n"));
+  const initialText = myWords.join("\n");
+  const [text, setText] = useState(initialText);
+  // Текст, що відповідає останньому УСПІШНО збереженому стану — початково
+  // це те саме, що прийшло з сервера (lobby.myWords). Поки поточний текст
+  // збігається з ним, кнопка не потрібна: показувати "Зберегти слова"
+  // одразу після вдалого збереження нема сенсу — нічого нового відправляти.
+  // Кнопка з'являється знову лише коли людина справді відредагувала слова.
+  const [savedText, setSavedText] = useState(initialText);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   const words = text.split(/[\n,]/).map((w) => w.trim()).filter(Boolean);
   const uniqueCount = new Set(words).size;
+  const isDirty = text.trim() !== savedText.trim();
 
   const handleSave = async () => {
     setError("");
     setBusy(true);
     try {
       await onSubmit(words);
+      setSavedText(text);
     } catch (err) {
       setError(err.message || "Не вдалося зберегти слова");
     } finally {
@@ -179,9 +188,13 @@ function WordsSubmitForm({ myWords, wordsPerTeam, onSubmit, onListDecks, onSaveD
         placeholder={"Наприклад:\nПарасолька\nВулик\nТелескоп"}
       />
       {error && <p className="error">{error}</p>}
-      <button className="btn btn-ghost btn-small" type="button" disabled={busy || uniqueCount < 1} onClick={handleSave}>
-        {busy ? "Зберігаємо…" : "Зберегти слова"}
-      </button>
+      {isDirty ? (
+        <button className="btn btn-ghost btn-small" type="button" disabled={busy || uniqueCount < 1} onClick={handleSave}>
+          {busy ? "Зберігаємо…" : "Зберегти слова"}
+        </button>
+      ) : (
+        uniqueCount > 0 && <p className="hint words-saved-hint">Збережено ✓</p>
+      )}
 
       {(onListDecks || onSaveDeck) && (
         <DeckManager
