@@ -70,6 +70,14 @@ export function emitFriendAccepted(io, toPublicId, friend) {
   io.to(`user:${toPublicId}`).emit("friend:accepted", { friend });
 }
 
+// Нове особисте повідомлення (чат друзів — Chat.jsx). Так само летить лише
+// в персональну кімнату отримувача: відправник вже має повідомлення
+// локально (messages.controller.js#sendMessage повертає його як відповідь
+// REST-запиту), дублювати йому через сокет не треба.
+export function emitChatMessage(io, toPublicId, message) {
+  io.to(`user:${toPublicId}`).emit("chat:message", { message });
+}
+
 // На відміну від lobby:update, стан гри шлють не однаковим для всіх —
 // кожен сокет отримує currentWord лише якщо його гравець зараз у
 // команді, чий хід (див. publicGameFor). Інакше суперник міг би просто
